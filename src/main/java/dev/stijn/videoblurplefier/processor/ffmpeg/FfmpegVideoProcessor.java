@@ -7,6 +7,7 @@ import com.github.kokorin.jaffree.ffmpeg.FilterChain;
 import com.github.kokorin.jaffree.ffmpeg.FilterGraph;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffmpeg.UrlOutput;
+import com.google.inject.internal.util.Preconditions;
 import dev.stijn.videoblurplefier.processor.Progress;
 import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +32,7 @@ public class FfmpegVideoProcessor implements VideoProcessor
     private final Path executableBinaryFolder;
     private final int videoWidth;
     private final int videoHeight;
+    boolean processing = false;
     @Nullable
     private Consumer<Progress> listener;
 
@@ -52,44 +54,53 @@ public class FfmpegVideoProcessor implements VideoProcessor
     {
         Objects.requireNonNull(input, "Input file cannot be null");
         Objects.requireNonNull(output, "Output file cannot be null");
+        Preconditions.checkState(!this.processing, "Already processing");
 
-        FFmpeg.atPath(this.executableBinaryFolder)
-                .setOverwriteOutput(true)
-                .addArguments("-hwaccel", "auto")
-                //.addArguments("-c:v", "h264")
-                .addArguments("-f", "lavfi")
-                .addInput(UrlInput.fromPath(input.toPath()))
-                .addArguments("-i", "color=" + BLURPLE_COLOR + ":s=" + this.videoWidth + "x" + this.videoHeight)
-                .setComplexFilter(FilterGraph.of(
-                        FilterChain.of(
-                                Filter.fromInputLink("0:v")
-                                        .setName("setpts")
-                                        .addArgument("PTS-STARTPTS"),
-                                Filter.withName("hue")
-                                        .addArgument("s", "0")
-                                        .addOutputLink("grayscale")
-                        ),
-                        FilterChain.of(
-                                Filter.fromInputLink("1:v")
-                                        .setName("setpts")
-                                        .addArgument("PTS-STARTPTS")
-                                        .addOutputLink("solidcolor")
-                        ),
-                        FilterChain.of(
-                                Filter.fromInputLink("grayscale")
-                                        .addInputLink("solidcolor")
-                                        .setName("blend")
-                                        .addArgument("shortest", "1")
-                                        .addArgument("all_mode", "overlay")
-                                        .addArgument("all_opacity", "1")
-                        )
-                ))
-                .addOutput(UrlOutput.toPath(output.toPath()))
-                .setProgressListener(fFmpegProgress -> {
-                    if (this.listener != null)
-                        this.listener.accept(this.mapFfmpegProgressToProgress(fFmpegProgress));
-                })
-                .execute();
+        this.processing = true;
+
+        try {
+            FFmpeg.atPath(this.executableBinaryFolder)
+                    .setOverwriteOutput(true)
+                    .addArguments("-hwaccel", "auto")
+                    //.addArguments("-c:v", "h264")
+                    .addArguments("-f", "lavfi")
+                    .addInput(UrlInput.fromPath(input.toPath()))
+                    .addArguments("-i", "color=" + BLURPLE_COLOR + ":s=" + this.videoWidth + "x" + this.videoHeight)
+                    .setComplexFilter(FilterGraph.of(
+                            FilterChain.of(
+                                    Filter.fromInputLink("0:v")
+                                            .setName("setpts")
+                                            .addArgument("PTS-STARTPTS"),
+                                    Filter.withName("hue")
+                                            .addArgument("s", "0")
+                                            .addOutputLink("grayscale")
+                            ),
+                            FilterChain.of(
+                                    Filter.fromInputLink("1:v")
+                                            .setName("setpts")
+                                            .addArgument("PTS-STARTPTS")
+                                            .addOutputLink("solidcolor")
+                            ),
+                            FilterChain.of(
+                                    Filter.fromInputLink("grayscale")
+                                            .addInputLink("solidcolor")
+                                            .setName("blend")
+                                            .addArgument("shortest", "1")
+                                            .addArgument("all_mode", "overlay")
+                                            .addArgument("all_opacity", "1")
+                            )
+                    ))
+                    .addOutput(UrlOutput.toPath(output.toPath()))
+                    .setProgressListener(fFmpegProgress -> {
+                        if (this.listener != null)
+                            this.listener.accept(this.mapFfmpegProgressToProgress(fFmpegProgress));
+                    })
+                    .execute();
+        } catch (final Exception exception) {
+            exception.printStackTrace();
+        } finally {
+            this.processing = false;
+        }
     }
 
     private Progress mapFfmpegProgressToProgress(@NotNull final FFmpegProgress fFmpegProgress)
