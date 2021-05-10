@@ -1,11 +1,9 @@
 package dev.stijn.videoblurplefier;
 
 import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-import javax.swing.event.*;
 
-public class GUImain extends JPanel {
+public class GUImain<publc> extends JPanel {
     private JButton renderButton;
     private JLabel inputfilelabel;
     private JTextField filein;
@@ -15,6 +13,8 @@ public class GUImain extends JPanel {
     private JTextField nameentry;
     private JButton selectoutputfile;
     private JButton inputselectbttn;
+    private JProgressBar progressbar;
+    private JTextArea logarea;
 
     public GUImain() {
         //construct components
@@ -27,12 +27,20 @@ public class GUImain extends JPanel {
         nameentry = new JTextField (5);
         selectoutputfile = new JButton ("Select Output...");
         inputselectbttn = new JButton ("Select Input...");
+        progressbar = new JProgressBar();
+        logarea = new JTextArea (5, 5);
 
         //set components properties
         renderButton.setToolTipText ("Render the frames");
         inputfilelabel.setToolTipText ("The input file (In .mp4 or something like that, must be a video file)");
         outputloc.setToolTipText ("The loaction you want to send the finshed file to.");
         nameentry.setToolTipText ("The name of the outputed file");
+        logarea.setEditable(false);
+        filein.setEditable(false);
+        filein.setText("Select a file below...");
+        outputloc.setEditable(false);
+        outputloc.setText("Select a file below...");
+        progressbar.setStringPainted(true);
 
         //adjust size and set layout
         setPreferredSize (new Dimension (628, 371));
@@ -48,6 +56,8 @@ public class GUImain extends JPanel {
         add (nameentry);
         add (selectoutputfile);
         add (inputselectbttn);
+        add (logarea);
+        add (progressbar);
 
         //set component bounds (only needed by Absolute Positioning)
         renderButton.setBounds (505, 310, 110, 40);
@@ -59,11 +69,17 @@ public class GUImain extends JPanel {
         nameentry.setBounds (290, 50, 170, 20);
         selectoutputfile.setBounds (15, 150, 120, 25);
         inputselectbttn.setBounds (15, 75, 115, 25);
+        logarea.setBounds (5, 245, 490, 120);
+        progressbar.setBounds(5, 215, 405, 25);
+        initlogger();
+        setProgressbarPercentage(100);
+        setProgressbarText("No action running.");
     }
 
 
     public static void main(String[] args) {
         JFrame frame = new JFrame ("Video Blurplefier - 1.0.0");
+        frame.setResizable(false);
         frame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().add (new GUImain());
         frame.pack();
@@ -72,5 +88,34 @@ public class GUImain extends JPanel {
 
     public static void invoke() {
         main(null);
+    }
+    public void initlogger() {
+        logarea.append("---- Application Started Successfully, awaiting input ---- \n ");
+        logarea.append("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101");
+    }
+    public void loggerAppend(String args) {
+        logarea.append(String.valueOf(args));
+    }
+    public void clearLogbox() {
+        logarea.setText("");
+    }
+    public void setProgressbarPercentage(Integer args) {
+        progressbar.setValue(args);
+    }
+    public void setProgressbarText(String args) {
+        progressbar.setString(String.valueOf(args));
+    }
+    public String getInputfile() {
+        return filein.getText();
+    }
+    public String getOutputLocation() {
+        return outputloc.getText();
+    }
+    public String getfileName() {
+        String filetext = nameentry.getText();
+        if(filetext.length() == 0) {
+            return null;
+        }
+        return filetext;
     }
 }
