@@ -119,7 +119,7 @@ public class MainGui extends JPanel
         this.progressbar.setBounds(5, 215, 405, 25);
         this.cancelButton.setBounds(420, 215, 100, 25);
         this.logArea.setAutoscrolls(true);
-        this.initlogger();
+        this.initLogger();
         this.setProgressbarPercentage(100);
         this.setProgressbarText("No action running.");
         this.setBackground(new Color(35, 39, 42));
@@ -211,7 +211,7 @@ public class MainGui extends JPanel
     }
 
     // util functions
-    public void initlogger()
+    public void initLogger()
     {
         this.logArea.append("---- Application Started Successfully, awaiting input ---- \n ");
         this.logArea.append("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101");
@@ -247,12 +247,10 @@ public class MainGui extends JPanel
         return this.outputLocation.getText();
     }
 
-    public String getfileName()
+    public String getFileName()
     {
-        final String filetext = this.nameEntry.getText();
-        if (filetext.length() == 0) {
-            return null;
-        }
-        return filetext;
+        final String fileText = this.nameEntry.getText();
+        if (fileText.isBlank()) return null;
+        return fileText;
     }
 }
