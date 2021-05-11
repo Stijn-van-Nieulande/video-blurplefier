@@ -1,5 +1,6 @@
 package dev.stijn.videoblurplefier.gui;
 
+import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
@@ -39,8 +40,6 @@ public class MainGui extends JPanel
     private JProgressBar progressbar;
     private JTextArea logArea;
     private JButton cancelButton;
-    private Integer videoWidth;
-    private Integer videoHeight;
 
     public MainGui(final JFrame frame)
     {
@@ -152,26 +151,30 @@ public class MainGui extends JPanel
                             .setInput(pathToVideo)
                             .execute();
 
+                    int videoWidth = 0;
+                    int videoHeight = 0;
+
                     for (final Stream stream : probeOut.getStreams()) {
+                        if (stream.getCodecType().equals(StreamType.VIDEO)) {
+                            videoWidth = stream.getCodedWidth();
+                            videoHeight = stream.getCodedHeight();
+                            break;
+                        }
+
                         this.loggerAppend("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                         System.out.println("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                     }
 
-
                     this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, 1020, 720);
+                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, videoWidth, videoHeight);
                     videoProcessor.setProgressListener(System.out::println);
 
                     final File inputFile = new File(pathToVideo);
-                    final String fileName = this.getFileName() == null ? "output" : this.getFileName();
+                    final String fileExtension = "mp4"; // TODO: Maybe this can be done without hardcoded
+                    final String fileName = (this.getFileName() == null ? "output" : this.getFileName()) + "." + fileExtension;
                     final File outputFile = new File(this.getOutputLocation(), fileName);
-                    File outputFile = new File(this.outputLocation.getText(), "weeb.mp4");
-
-                    System.out.println("input: \"" + this.getInputfile() + "\"");
-                    System.out.println("output 1: \"" + this.getOutputLocation() + "\"");
-                    System.out.println("output 2: \"" + this.getFileName() + "\"");
 
                     videoProcessor.process(inputFile, outputFile);
                 } else if (result == JOptionPane.NO_OPTION) {
