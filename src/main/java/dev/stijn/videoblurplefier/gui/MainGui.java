@@ -130,60 +130,59 @@ public class MainGui extends JPanel
                         "Please Select an input file! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (this.outputLocation.getText().equals("Select a file below...")) {
+                return;
+            }
+            if (this.outputLocation.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an output directory! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (this.nameEntry.getText().equals("")) {
+                return;
+            }
+            if (this.nameEntry.getText().equals("")) {
                 final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
-                if (result == JOptionPane.YES_OPTION) {
-                    this.clearLogbox();
-                    this.setProgressbarText("Waiting For analyzation to finish... ");
-                    this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
-
-                    System.out.println(this.ffprobe);
-                    final String pathToVideo = this.fileInput.getText();
-                    final FFprobeResult probeOut = FFprobe.atPath(this.ffprobePath)
-                            .setShowStreams(true)
-                            .setInput(pathToVideo)
-                            .execute();
-
-                    int videoWidth = 0;
-                    int videoHeight = 0;
-
-                    for (final Stream stream : probeOut.getStreams()) {
-                        if (stream.getCodecType().equals(StreamType.VIDEO)) {
-                            videoWidth = stream.getCodedWidth();
-                            videoHeight = stream.getCodedHeight();
-                            break;
-                        }
-
-                        this.loggerAppend("\n type: " + stream.getCodecType()
-                                + "\n duration: " + stream.getDuration() + " seconds");
-                        System.out.println("\n type: " + stream.getCodecType()
-                                + "\n duration: " + stream.getDuration() + " seconds");
-                    }
-
-                    this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, videoWidth, videoHeight);
-                    videoProcessor.setProgressListener(System.out::println);
-
-                    final File inputFile = new File(pathToVideo);
-                    final String fileExtension = "mp4"; // TODO: Maybe this can be done without hardcoded
-                    final String fileName = (this.getFileName() == null ? "output" : this.getFileName()) + "." + fileExtension;
-                    final File outputFile = new File(this.getOutputLocation(), fileName);
-
-                    videoProcessor.process(inputFile, outputFile);
-                } else if (result == JOptionPane.NO_OPTION) {
-                    return;
-                } else {
-                    System.out.println("[DEBUG] Render Window was closed without any button selection, stopping render...");
-                }
+                if (result != JOptionPane.YES_OPTION) return;
             }
-            // call render here
+
+            this.clearLogbox();
+            this.setProgressbarText("Waiting For analyzation to finish... ");
+            this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
+
+            System.out.println(this.ffprobe);
+            final String pathToVideo = this.fileInput.getText();
+            final FFprobeResult probeOut = FFprobe.atPath(this.ffprobePath)
+                    .setShowStreams(true)
+                    .setInput(pathToVideo)
+                    .execute();
+
+            int videoWidth = 0;
+            int videoHeight = 0;
+
+            for (final Stream stream : probeOut.getStreams()) {
+                if (stream.getCodecType().equals(StreamType.VIDEO)) {
+                    videoWidth = stream.getCodedWidth();
+                    videoHeight = stream.getCodedHeight();
+                    break;
+                }
+
+                this.loggerAppend("\n type: " + stream.getCodecType()
+                        + "\n duration: " + stream.getDuration() + " seconds");
+                System.out.println("\n type: " + stream.getCodecType()
+                        + "\n duration: " + stream.getDuration() + " seconds");
+            }
+
+            this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
+            final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, videoWidth, videoHeight);
+            videoProcessor.setProgressListener(System.out::println);
+
+            final File inputFile = new File(pathToVideo);
+            final String fileExtension = "mp4"; // TODO: Maybe this can be done without hardcoded
+            final String fileName = (this.getFileName() == null ? "output" : this.getFileName()) + "." + fileExtension;
+            final File outputFile = new File(this.getOutputLocation(), fileName);
+
+            videoProcessor.process(inputFile, outputFile);
         });
 
         this.inputSelectButton.addActionListener(e -> {
