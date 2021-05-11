@@ -1,5 +1,7 @@
 package dev.stijn.videoblurplefier;
 
+import dev.stijn.videoblurplefier.gui.MainGui;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +20,7 @@ public class VideoBlurplefier
 //        copyResources(); // TODO: re-enable when fixed
 
         System.out.println("Loading GUI...");
-        GUImain.invoke();
+        MainGui.open();
         System.out.println("GUI Ready.");
     }
 
