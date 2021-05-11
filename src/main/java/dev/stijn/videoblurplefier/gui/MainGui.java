@@ -39,19 +39,19 @@ public class MainGui extends JPanel
 {
     private static final Path FFMPEG_BIN_PATH = new File(System.getenv("APPDATA"), "video-blurplefier/bin").toPath();
 
-    private JButton renderButton;
     private JLabel inputFileLabel;
-    private JTextField fileInput;
-    private JLabel outputFilename;
-    private JLabel outputDir;
-    private JTextField outputLocation;
-    private JTextField nameEntry;
-    private JButton selectOutputFile;
-    private JButton inputSelectButton;
+    private JTextField inputFileField;
+    private JButton inputFileButton;
+    private JLabel outputFileLabel;
+    private JTextField outputFileField;
+    private JButton outputFileButton;
+    private JLabel outputFilenameLabel;
+    private JTextField outputFilenameField;
     private JProgressBar progressbar;
     private JTextArea logArea;
+    private JButton renderButton;
     private JButton cancelButton;
-    private Thread renderthread;
+    private Thread renderThread;
 
     public MainGui(final JFrame frame)
     {
@@ -205,7 +205,7 @@ public class MainGui extends JPanel
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (result != JOptionPane.YES_OPTION) return;
-            renderthread.interrupt();
+            this.renderThread.interrupt();
             this.setProgressbarText("Render Stopped.");
             this.setProgressbarPercentage(100);
             this.clearLogbox();
@@ -216,7 +216,7 @@ public class MainGui extends JPanel
             this.cancelButton.setEnabled(false);
         });
 
-        this.inputSelectButton.addActionListener(e -> {
+        this.inputFileButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             final int option = fileChooser.showOpenDialog(frame);
 
@@ -341,7 +341,7 @@ public class MainGui extends JPanel
             this.setProgressbarPercentage(percents);
             this.setProgressbarText("Rendering: " + percents + "% complete.");
             System.out.println(progress);
-            if(percents == 100) {
+            if (percents == 100) {
                 this.setProgressbarText("Render Complete.");
                 this.clearLogbox();
                 this.loggerAppend("--- Render Complete! ---");
@@ -351,8 +351,8 @@ public class MainGui extends JPanel
             }
         });
 
-        renderthread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
-        renderthread.start();
+        this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
+        this.renderThread.start();
         this.cancelButton.setEnabled(true);
     }
 
