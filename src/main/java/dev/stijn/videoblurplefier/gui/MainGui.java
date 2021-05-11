@@ -147,11 +147,12 @@ public class MainGui extends JPanel
 
                     System.out.println(this.ffprobe);
                     final String pathToVideo = this.fileInput.getText();
-                    final FFprobeResult probeout = FFprobe.atPath(this.ffprobePath)
+                    final FFprobeResult probeOut = FFprobe.atPath(this.ffprobePath)
                             .setShowStreams(true)
                             .setInput(pathToVideo)
                             .execute();
-                    for (final Stream stream : probeout.getStreams()) {
+
+                    for (final Stream stream : probeOut.getStreams()) {
                         this.loggerAppend("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                         System.out.println("\n type: " + stream.getCodecType()
@@ -163,14 +164,14 @@ public class MainGui extends JPanel
                     final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, 1020, 720);
                     videoProcessor.setProgressListener(System.out::println);
 
-                    File inputFile = new File(pathToVideo);
-                    // this.outputFilename.getText()
-                    // TODO: Fix "weeb.mp4" this needs to be the output file
+                    final File inputFile = new File(pathToVideo);
+                    final String fileName = this.getFileName() == null ? "output" : this.getFileName();
+                    final File outputFile = new File(this.getOutputLocation(), fileName);
                     File outputFile = new File(this.outputLocation.getText(), "weeb.mp4");
 
-                    System.out.println("input: \"" + inputFile.getAbsolutePath() + "\"");
-                    System.out.println("output 1: \"" + this.outputLocation.getText() + "\"");
-                    System.out.println("output 2: \"" + this.outputFilename.getText() + "\"");
+                    System.out.println("input: \"" + this.getInputfile() + "\"");
+                    System.out.println("output 1: \"" + this.getOutputLocation() + "\"");
+                    System.out.println("output 2: \"" + this.getFileName() + "\"");
 
                     videoProcessor.process(inputFile, outputFile);
                 } else if (result == JOptionPane.NO_OPTION) {
