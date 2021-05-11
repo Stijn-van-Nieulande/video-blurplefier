@@ -126,42 +126,53 @@ public class MainGui extends JPanel
 
 
         this.renderButton.addActionListener(e -> {
-            if (MainGui.this.fileInput.getText().equals("Select a file below...")) {
+            if (this.fileInput.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an input file! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (MainGui.this.outputLocation.getText().equals("Select a file below...")) {
+            } else if (this.outputLocation.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an output directory! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (MainGui.this.nameEntry.getText().equals("")) {
+            } else if (this.nameEntry.getText().equals("")) {
                 final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
                 if (result == JOptionPane.YES_OPTION) {
-                    MainGui.this.clearLogbox();
-                    MainGui.this.setProgressbarText("Waiting For analyzation to finish... ");
-                    MainGui.this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
+                    this.clearLogbox();
+                    this.setProgressbarText("Waiting For analyzation to finish... ");
+                    this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
-                    System.out.println(MainGui.this.ffprobe);
-                    final String pathToVideo = MainGui.this.fileInput.getText();
-                    final FFprobeResult probeout = FFprobe.atPath(MainGui.this.ffprobePath)
+                    System.out.println(this.ffprobe);
+                    final String pathToVideo = this.fileInput.getText();
+                    final FFprobeResult probeout = FFprobe.atPath(this.ffprobePath)
                             .setShowStreams(true)
                             .setInput(pathToVideo)
                             .execute();
                     for (final Stream stream : probeout.getStreams()) {
-                        MainGui.this.loggerAppend("\n type: " + stream.getCodecType()
+                        this.loggerAppend("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                         System.out.println("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                     }
 
 
-                    MainGui.this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(MainGui.this.ffmpegPath, 1020, 720);
+                    this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
+                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, 1020, 720);
                     videoProcessor.setProgressListener(System.out::println);
+
+                    File inputFile = new File(pathToVideo);
+                    // this.outputFilename.getText()
+                    // TODO: Fix "weeb.mp4" this needs to be the output file
+                    File outputFile = new File(this.outputLocation.getText(), "weeb.mp4");
+
+                    System.out.println("input: \"" + inputFile.getAbsolutePath() + "\"");
+                    System.out.println("output 1: \"" + this.outputLocation.getText() + "\"");
+                    System.out.println("output 2: \"" + this.outputFilename.getText() + "\"");
+
+                    videoProcessor.process(inputFile, outputFile);
                 } else if (result == JOptionPane.NO_OPTION) {
                     return;
                 } else {
@@ -177,8 +188,8 @@ public class MainGui extends JPanel
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                MainGui.this.fileInput.setText(file.getPath());
-                MainGui.this.loggerAppend("\n Set input file to: " + file.getPath());
+                this.fileInput.setText(file.getPath());
+                this.loggerAppend("\n Set input file to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -191,8 +202,8 @@ public class MainGui extends JPanel
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                MainGui.this.outputLocation.setText(file.getPath());
-                MainGui.this.loggerAppend("\n Set output directory to: " + file.getPath());
+                this.outputLocation.setText(file.getPath());
+                this.loggerAppend("\n Set output directory to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
