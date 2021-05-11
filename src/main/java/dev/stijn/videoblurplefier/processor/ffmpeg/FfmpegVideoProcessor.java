@@ -36,7 +36,7 @@ public class FfmpegVideoProcessor implements VideoProcessor
     @Nullable
     private Consumer<Progress> listener;
 
-    public FfmpegVideoProcessor(@Nullable final Path executableBinaryFolder, final int videoWidth, final int videoHeight)
+    public FfmpegVideoProcessor(final @Nullable Path executableBinaryFolder, final int videoWidth, final int videoHeight)
     {
         this.executableBinaryFolder = executableBinaryFolder;
         this.videoWidth = videoWidth;

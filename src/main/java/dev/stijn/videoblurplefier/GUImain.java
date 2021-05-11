@@ -9,7 +9,10 @@ import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import javax.swing.*;
 
@@ -29,6 +32,12 @@ public class GUImain extends JPanel {
 
     private Integer videoW;
     private Integer videoH;
+
+    private final File ffprobe = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
+    private final File ffmpeg = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
+
+    private final Path ffprobepath = ffprobe.toPath();
+    private final Path ffmpegpath = ffprobe.toPath();
 
     public GUImain(final JFrame frame) {
         //construct components
@@ -134,11 +143,10 @@ public class GUImain extends JPanel {
                         clearLogbox();
                         setProgressbarText("Waiting For analyzation to finish... ");
                         loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
-                        final Path ffprobe = Path.of(System.getProperty("user.dir") + "/bin/");
-                        final Path ffmpeg = Path.of(System.getProperty("user.dir") + "/bin/");
+
                         System.out.println(ffprobe);
                         String pathToVideo = filein.getText();
-                        FFprobeResult probeout = FFprobe.atPath(ffprobe)
+                        FFprobeResult probeout = FFprobe.atPath(ffprobepath)
                                 .setShowStreams(true)
                                 .setInput(pathToVideo)
                                 .execute();
@@ -149,14 +157,16 @@ public class GUImain extends JPanel {
                                     + "\n duration: " + stream.getDuration() + " seconds");
                         }
 
+
                         loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-                        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(ffmpeg, 1020, 720);
+                        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(ffmpegpath, 1020, 720);
                         videoProcessor.setProgressListener(System.out::println);
                     }else if (result == JOptionPane.NO_OPTION){
                         return;
                     }else {
                         System.out.println("[DEBUG] Render Window was closed without any button selection, stopping render...");
                     }
+
 
                 }
                 // call render here
