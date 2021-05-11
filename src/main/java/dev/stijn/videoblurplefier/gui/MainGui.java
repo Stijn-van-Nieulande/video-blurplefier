@@ -46,6 +46,7 @@ public class MainGui extends JPanel
     private JProgressBar progressbar;
     private JTextArea logArea;
     private JButton cancelButton;
+    private Thread renderthread;
 
     public MainGui(final JFrame frame)
     {
@@ -155,6 +156,22 @@ public class MainGui extends JPanel
             this.processVideo();
         });
 
+        this.cancelButton.addActionListener(e -> {
+            final int result = JOptionPane.showConfirmDialog(frame, "WARNING! \n by stopping the render process, THE VIDEO WILL NOT BE FULLY RENDERED. Stop Process?", "Render: Warning",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (result != JOptionPane.YES_OPTION) return;
+            renderthread.interrupt();
+            this.setProgressbarText("Render Stopped.");
+            this.setProgressbarPercentage(100);
+            this.clearLogbox();
+            this.loggerAppend("\n --- Render Stopped ---");
+            this.loggerAppend("\n Warning: this video is partial. It may not even play. ");
+            this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
+            this.loggerAppend("\n Now ready for more jobs.");
+            this.cancelButton.setEnabled(false);
+        });
+
         this.inputSelectButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             final int option = fileChooser.showOpenDialog(frame);
@@ -260,12 +277,12 @@ public class MainGui extends JPanel
                 videoHeight = stream.getCodedHeight();
                 break;
             }
-
             this.loggerAppend("\n type: " + stream.getCodecType()
                     + "\n duration: " + stream.getDuration() + " seconds");
             System.out.println("\n type: " + stream.getCodecType()
                     + "\n duration: " + stream.getDuration() + " seconds");
         }
+        this.setProgressbarText("Waiting For render to start... ");
 
         final File inputFile = new File(pathToVideo);
         final String fileExtension = "mp4"; // TODO: Maybe this can be done without hardcoded
@@ -273,18 +290,27 @@ public class MainGui extends JPanel
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
         final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(inputFile.toPath());
-
         this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
         final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
             this.setProgressbarPercentage(percents);
-
+            this.setProgressbarText("Rendering: " + percents + "% complete.");
             System.out.println(progress);
+            if(percents == 100) {
+                this.setProgressbarText("Render Complete.");
+                this.clearLogbox();
+                this.loggerAppend("--- Render Complete! ---");
+                this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
+                this.loggerAppend("\n Now ready for more jobs.");
+                this.cancelButton.setEnabled(false);
+            }
         });
 
-        new Thread(() -> videoProcessor.process(inputFile, outputFile)).start();
+        renderthread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
+        renderthread.start();
+        this.cancelButton.setEnabled(true);
     }
 
     private long getExactVideoDurationMilliseconds(@NotNull final Path videoInputPath)
