@@ -29,10 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class MainGui extends JPanel
 {
-    private final File ffprobe = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
-    private final File ffmpeg = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
-    private final Path ffprobePath = this.ffprobe.toPath();
-    private final Path ffmpegPath = this.ffprobe.toPath();
+    private static final Path FFMPEG_BIN_PATH = new File(System.getenv("APPDATA"), "video-blurplefier/bin").toPath();
 
     private JButton renderButton;
     private JLabel inputFileLabel;
@@ -261,9 +258,8 @@ public class MainGui extends JPanel
         this.setProgressbarText("Waiting For analyzation to finish... ");
         this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
-        System.out.println(this.ffprobe);
         final String pathToVideo = this.fileInput.getText();
-        final FFprobeResult probeOut = FFprobe.atPath(this.ffprobePath)
+        final FFprobeResult probeOut = FFprobe.atPath(FFMPEG_BIN_PATH)
                 .setShowStreams(true)
                 .setInput(pathToVideo)
                 .execute();
@@ -291,7 +287,7 @@ public class MainGui extends JPanel
 
         final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(inputFile.toPath());
         this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(this.ffmpegPath, videoWidth, videoHeight);
+        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(FFMPEG_BIN_PATH, videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
@@ -319,7 +315,7 @@ public class MainGui extends JPanel
 
         final AtomicLong durationMillis = new AtomicLong();
 
-        FFmpeg.atPath(this.ffmpegPath)
+        FFmpeg.atPath(FFMPEG_BIN_PATH)
                 .addInput(UrlInput.fromPath(videoInputPath))
                 .addOutput(new NullOutput())
                 .setProgressListener(progress -> durationMillis.set(progress.getTimeMillis()))
