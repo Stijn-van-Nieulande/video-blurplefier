@@ -53,6 +53,12 @@
             <artifactId>annotations</artifactId>
             <version>16.0.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.github.vincenzopalazzo</groupId>
+            <artifactId>material-ui-swing</artifactId>
+            <version>1.1.2-rc2</version>
+        </dependency>
     </dependencies>
 
     <build>

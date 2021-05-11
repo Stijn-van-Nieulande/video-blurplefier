@@ -1,7 +1,11 @@
 package dev.stijn.videoblurplefier;
 
+import dev.stijn.videoblurplefier.gui.BlurpleDarkTheme;
 import dev.stijn.videoblurplefier.gui.MainGui;
+import mdlaf.MaterialLookAndFeel;
 
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,11 +19,15 @@ public class VideoBlurplefier
     // public static final File HOME_DIR = new File(System.getProperty("user.home"), "video-blurplefier");
     public static Path executablesPath = null;
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws UnsupportedLookAndFeelException
     {
 //        copyResources(); // TODO: re-enable when fixed
 
         System.out.println("Loading GUI...");
+        UIManager.setLookAndFeel(new MaterialLookAndFeel(new BlurpleDarkTheme()));
+        UIManager.put("Button[border].enable", false);
+        UIManager.put("Button[border].toAll", false);
+
         MainGui.open();
         System.out.println("GUI Ready.");
     }

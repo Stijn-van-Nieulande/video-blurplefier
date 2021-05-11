@@ -11,6 +11,9 @@ import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
 import org.jetbrains.annotations.NotNull;
 
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -20,8 +23,13 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -33,116 +41,155 @@ public class MainGui extends JPanel
 
     private final JButton renderButton;
     private final JLabel inputFileLabel;
-    private final JTextField fileInput;
-    private final JLabel outputFilename;
-    private final JLabel outputDir;
-    private final JTextField outputLocation;
-    private final JTextField nameEntry;
-    private final JButton selectOutputFile;
-    private final JButton inputSelectButton;
+    private final JTextField inputFileField;
+    private final JLabel outputFilenameLabel;
+    private final JLabel outputFileLabel;
+    private final JTextField outputFileField;
+    private final JTextField outputFilenameField;
+    private final JButton outputFileButton;
+    private final JButton inputFileButton;
     private final JProgressBar progressbar;
     private final JTextArea logArea;
     private final JButton cancelButton;
 
     public MainGui(final JFrame frame)
     {
+        final JPanel inputsPanel = new JPanel();
+        final JPanel progressPanel = new JPanel();
+
+        final ImageIcon logo = new ImageIcon();
+        try {
+            logo.setImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("logo-small.png"))));
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
         //construct components
-        this.renderButton = new JButton("Render!");
         this.inputFileLabel = new JLabel("Input File");
-        this.fileInput = new JTextField(5);
-        this.outputFilename = new JLabel("Output File (Name)");
-        this.outputDir = new JLabel("Output Location ");
-        this.outputLocation = new JTextField(5);
-        this.nameEntry = new JTextField(5);
-        this.selectOutputFile = new JButton("Select Output...");
-        this.inputSelectButton = new JButton("Select Input...");
+        this.inputFileField = new JTextField(5);
+        this.inputFileButton = new JButton("Select Input File");
+        this.outputFileLabel = new JLabel("Output Location ");
+        this.outputFileField = new JTextField(5);
+        this.outputFileButton = new JButton("Select Output Directory");
+        this.outputFilenameLabel = new JLabel("Output File Name");
+        this.outputFilenameField = new JTextField(5);
         this.progressbar = new JProgressBar();
         this.logArea = new JTextArea(5, 5);
         this.cancelButton = new JButton("Halt Cycle");
+        this.renderButton = new JButton("Render!");
 
         //set components properties
         this.renderButton.setToolTipText("Render the frames");
         this.inputFileLabel.setToolTipText("The input file (In .mp4 or something like that, must be a video file)");
-        this.outputLocation.setToolTipText("The loaction you want to send the finshed file to.");
-        this.nameEntry.setToolTipText("The name of the outputed file");
+        this.outputFileField.setToolTipText("The loaction you want to send the finshed file to.");
+        this.outputFilenameField.setToolTipText("The name of the outputed file");
         this.logArea.setEditable(false);
-        this.fileInput.setEditable(false);
-        this.fileInput.setText("Select a file below...");
-        this.outputLocation.setEditable(false);
-        this.outputLocation.setText("Select a file below...");
+        this.inputFileField.setEditable(false);
+        this.inputFileField.setText("Select a file below...");
+        this.outputFileField.setEditable(false);
+        this.outputFileField.setText("Select a file below...");
         this.progressbar.setStringPainted(true);
         this.cancelButton.setEnabled(false);
 
-        // set COLORS
-        this.logArea.setBackground(new Color(114, 137, 218));
-        this.logArea.setForeground(new Color(255, 255, 255));
-        this.selectOutputFile.setBackground(new Color(114, 137, 218));
-        this.selectOutputFile.setForeground(new Color(255, 255, 255));
-        this.inputSelectButton.setBackground(new Color(114, 137, 218));
-        this.inputSelectButton.setForeground(new Color(255, 255, 255));
-        this.cancelButton.setBackground(new Color(114, 137, 218));
-        this.renderButton.setBackground(new Color(114, 137, 218));
-        this.renderButton.setForeground(new Color(255, 255, 255));
+        // Set dimensions
+        this.inputFileField.setMinimumSize(new Dimension(-1, 40));
+        this.outputFileField.setMinimumSize(new Dimension(-1, 40));
+        this.outputFilenameField.setMinimumSize(new Dimension(-1, 40));
 
-        this.inputFileLabel.setForeground(new Color(255, 255, 255));
-        this.outputFilename.setForeground(new Color(255, 255, 255));
-        this.outputDir.setForeground(new Color(255, 255, 255));
+        this.renderButton.setMinimumSize(new Dimension(80, 100));
+        this.logArea.setMinimumSize(new Dimension(-1, 100));
 
+        // Init inputs grid
+        inputsPanel.setLayout(new GridBagLayout());
+        final GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.ipady = 30;
+        constraints.insets = new Insets(3, 15, 3, 15);
+
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        inputsPanel.add(this.inputFileLabel, constraints);
+        constraints.gridy = 1;
+        inputsPanel.add(this.inputFileField, constraints);
+        constraints.gridy = 2;
+        inputsPanel.add(this.inputFileButton, constraints);
+
+        constraints.gridx = 1;
+        constraints.gridy = 0;
+        inputsPanel.add(this.outputFileLabel, constraints);
+        constraints.gridy = 1;
+        inputsPanel.add(this.outputFileField, constraints);
+        constraints.gridy = 2;
+        inputsPanel.add(this.outputFileButton, constraints);
+
+        constraints.gridy = 4;
+        inputsPanel.add(this.outputFilenameField, constraints);
+        constraints.gridy = 3;
+        constraints.insets = new Insets(33, 15, 3, 15);
+        inputsPanel.add(this.outputFilenameLabel, constraints);
+
+        // Init progress grid
+        progressPanel.setLayout(new GridBagLayout());
+        final Border padding = BorderFactory.createEmptyBorder(30, 12, 15, 12);
+        progressPanel.setBorder(padding);
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = .8;
+        constraints.insets = new Insets(3, 5, 3, 5);
+
+        progressPanel.add(this.progressbar, constraints);
+        constraints.gridx = 1;
+        constraints.weightx = .2;
+        progressPanel.add(this.cancelButton, constraints);
+        constraints.gridy = 1;
+        constraints.gridx = 0;
+        progressPanel.add(this.logArea, constraints);
+        constraints.gridx = 1;
+        progressPanel.add(this.renderButton, constraints);
 
         //adjust size and set layout
-        this.setPreferredSize(new Dimension(628, 371));
-        this.setLayout(null);
+        this.setPreferredSize(new Dimension(980, 570));
+        this.setLayout(new GridLayout(3, 0));
 
-        //add components
-        this.add(this.renderButton);
-        this.add(this.inputFileLabel);
-        this.add(this.fileInput);
-        this.add(this.outputFilename);
-        this.add(this.outputDir);
-        this.add(this.outputLocation);
-        this.add(this.nameEntry);
-        this.add(this.selectOutputFile);
-        this.add(this.inputSelectButton);
-        this.add(this.logArea);
-        this.add(this.progressbar);
-        this.add(this.cancelButton);
+        // Stupid way to show logo....
+        final JLabel logoLabel = new JLabel();
+        logoLabel.setHorizontalAlignment(JLabel.CENTER);
+        logoLabel.setIcon(logo);
 
-        //set component bounds (only needed by Absolute Positioning)
-        this.renderButton.setBounds(505, 310, 110, 40);
-        this.inputFileLabel.setBounds(15, 20, 160, 40);
-        this.fileInput.setBounds(15, 50, 175, 20);
-        this.outputFilename.setBounds(290, 30, 130, 25);
-        this.outputDir.setBounds(15, 100, 100, 25);
-        this.outputLocation.setBounds(15, 125, 190, 20);
-        this.nameEntry.setBounds(290, 50, 170, 20);
-        this.selectOutputFile.setBounds(15, 150, 120, 25);
-        this.inputSelectButton.setBounds(15, 75, 115, 25);
-        this.logArea.setBounds(5, 245, 490, 120);
-        this.progressbar.setBounds(5, 215, 405, 25);
-        this.cancelButton.setBounds(420, 215, 100, 25);
+        this.add(logoLabel);
+        this.add(inputsPanel);
+        this.add(progressPanel);
+
+        try {
+            frame.setIconImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("favicon.png"))));
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
         this.logArea.setAutoscrolls(true);
         this.initLogger();
-        this.setProgressbarPercentage(100);
         this.setProgressbarText("No action running.");
         this.setBackground(new Color(35, 39, 42));
 
 
         this.renderButton.addActionListener(e -> {
-            if (this.fileInput.getText().equals("Select a file below...")) {
+            if (this.inputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an input file! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.outputLocation.getText().equals("Select a file below...")) {
+            if (this.outputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an output directory! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.nameEntry.getText().equals("")) {
+            if (this.outputFilenameField.getText().equals("")) {
                 final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
@@ -152,27 +199,27 @@ public class MainGui extends JPanel
             this.processVideo();
         });
 
-        this.inputSelectButton.addActionListener(e -> {
+        this.inputFileButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             final int option = fileChooser.showOpenDialog(frame);
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                this.fileInput.setText(file.getPath());
+                this.inputFileField.setText(file.getPath());
                 this.loggerAppend("\n Set input file to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
         });
 
-        this.selectOutputFile.addActionListener(e -> {
+        this.outputFileButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             final int option = fileChooser.showOpenDialog(frame);
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                this.outputLocation.setText(file.getPath());
+                this.outputFileField.setText(file.getPath());
                 this.loggerAppend("\n Set output directory to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
@@ -220,17 +267,17 @@ public class MainGui extends JPanel
 
     public String getInputfile()
     {
-        return this.fileInput.getText();
+        return this.inputFileField.getText();
     }
 
     public String getOutputLocation()
     {
-        return this.outputLocation.getText();
+        return this.outputFileField.getText();
     }
 
     public String getFileName()
     {
-        final String fileText = this.nameEntry.getText();
+        final String fileText = this.outputFilenameField.getText();
         if (fileText.isBlank()) return null;
         return fileText;
     }
@@ -241,7 +288,7 @@ public class MainGui extends JPanel
         this.setProgressbarText("Waiting For analyzation to finish... ");
         this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
-        final String pathToVideo = this.fileInput.getText();
+        final String pathToVideo = this.inputFileField.getText();
         final FFprobeResult probeOut = FFprobe.atPath(FFMPEG_BIN_PATH)
                 .setShowStreams(true)
                 .setInput(pathToVideo)
