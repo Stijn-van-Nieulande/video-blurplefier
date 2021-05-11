@@ -1,4 +1,4 @@
-package dev.stijn.videoblurplefier;
+package dev.stijn.videoblurplefier.gui;
 
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
@@ -20,7 +20,7 @@ import java.awt.Dimension;
 import java.io.File;
 import java.nio.file.Path;
 
-public class GUImain extends JPanel
+public class MainGui extends JPanel
 {
     private final File ffprobe = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
     private final File ffmpeg = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
@@ -42,7 +42,7 @@ public class GUImain extends JPanel
     private Integer videoW;
     private Integer videoH;
 
-    public GUImain(final JFrame frame)
+    public MainGui(final JFrame frame)
     {
         //construct components
         this.renderButton = new JButton("Render!");
@@ -126,41 +126,41 @@ public class GUImain extends JPanel
 
 
         this.renderButton.addActionListener(e -> {
-            if (GUImain.this.filein.getText().equals("Select a file below...")) {
+            if (MainGui.this.filein.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an input file! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (GUImain.this.outputloc.getText().equals("Select a file below...")) {
+            } else if (MainGui.this.outputloc.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an output directory! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
-            } else if (GUImain.this.nameentry.getText().equals("")) {
+            } else if (MainGui.this.nameentry.getText().equals("")) {
                 final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
                 if (result == JOptionPane.YES_OPTION) {
-                    GUImain.this.clearLogbox();
-                    GUImain.this.setProgressbarText("Waiting For analyzation to finish... ");
-                    GUImain.this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
+                    MainGui.this.clearLogbox();
+                    MainGui.this.setProgressbarText("Waiting For analyzation to finish... ");
+                    MainGui.this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
-                    System.out.println(GUImain.this.ffprobe);
-                    final String pathToVideo = GUImain.this.filein.getText();
-                    final FFprobeResult probeout = FFprobe.atPath(GUImain.this.ffprobepath)
+                    System.out.println(MainGui.this.ffprobe);
+                    final String pathToVideo = MainGui.this.filein.getText();
+                    final FFprobeResult probeout = FFprobe.atPath(MainGui.this.ffprobepath)
                             .setShowStreams(true)
                             .setInput(pathToVideo)
                             .execute();
                     for (final Stream stream : probeout.getStreams()) {
-                        GUImain.this.loggerAppend("\n type: " + stream.getCodecType()
+                        MainGui.this.loggerAppend("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                         System.out.println("\n type: " + stream.getCodecType()
                                 + "\n duration: " + stream.getDuration() + " seconds");
                     }
 
 
-                    GUImain.this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(GUImain.this.ffmpegpath, 1020, 720);
+                    MainGui.this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
+                    final VideoProcessor videoProcessor = new FfmpegVideoProcessor(MainGui.this.ffmpegpath, 1020, 720);
                     videoProcessor.setProgressListener(System.out::println);
                 } else if (result == JOptionPane.NO_OPTION) {
                     return;
@@ -177,8 +177,8 @@ public class GUImain extends JPanel
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                GUImain.this.filein.setText(file.getPath());
-                GUImain.this.loggerAppend("\n Set input file to: " + file.getPath());
+                MainGui.this.filein.setText(file.getPath());
+                MainGui.this.loggerAppend("\n Set input file to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -191,8 +191,8 @@ public class GUImain extends JPanel
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                GUImain.this.outputloc.setText(file.getPath());
-                GUImain.this.loggerAppend("\n Set output directory to: " + file.getPath());
+                MainGui.this.outputloc.setText(file.getPath());
+                MainGui.this.loggerAppend("\n Set output directory to: " + file.getPath());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -206,7 +206,7 @@ public class GUImain extends JPanel
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
-        frame.getContentPane().add(new GUImain(frame));
+        frame.getContentPane().add(new MainGui(frame));
         frame.pack();
         frame.setVisible(true);
     }
