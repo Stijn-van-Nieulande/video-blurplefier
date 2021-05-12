@@ -17,11 +17,11 @@ public class VideoBlurplefier
 {
     public static final String OS = System.getProperty("os.name").toLowerCase();
     // public static final File HOME_DIR = new File(System.getProperty("user.home"), "video-blurplefier");
-    public static Path executablesPath = null;
+    public Path executablesPath = null;
 
-    public static void main(final String[] args) throws UnsupportedLookAndFeelException
+    public VideoBlurplefier() throws UnsupportedLookAndFeelException
     {
-//        copyResources(); // TODO: re-enable when fixed
+        //        copyResources(); // TODO: re-enable when fixed
 
         System.out.println("Loading GUI...");
         UIManager.setLookAndFeel(new MaterialLookAndFeel(new BlurpleDarkTheme()));
@@ -32,46 +32,51 @@ public class VideoBlurplefier
         System.out.println("GUI Ready.");
     }
 
-    public static boolean isWindows()
+    public static void main(final String[] args) throws UnsupportedLookAndFeelException
+    {
+        new VideoBlurplefier();
+    }
+
+    public boolean isWindows()
     {
         return OS.contains("win");
     }
 
-    public static boolean isMac()
+    public boolean isMac()
     {
         return OS.contains("mac");
     }
 
-    public static boolean isUnix()
+    public boolean isUnix()
     {
         return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"));
     }
 
-    public static boolean isSolaris()
+    public boolean isSolaris()
     {
         return OS.contains("sunos");
     }
 
-    public static void copyResources()
+    public void copyResources()
     {
         // make sure the bin dir exists
         // new File(HOME_DIR, "bin").mkdirs();
 
-        if (isWindows()) {
+        if (this.isWindows()) {
             final File appdataDir = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
             appdataDir.mkdirs();
 
-            copyExecutableResource("bin/win/ffmpeg.exe", new File(appdataDir, "ffmpeg.exe"));
-            copyExecutableResource("bin/win/ffplay.exe", new File(appdataDir, "ffplay.exe"));
-            copyExecutableResource("bin/win/ffprobe.exe", new File(appdataDir, "ffprobe.exe"));
+            this.copyExecutableResource("bin/win/ffmpeg.exe", new File(appdataDir, "ffmpeg.exe"));
+            this.copyExecutableResource("bin/win/ffplay.exe", new File(appdataDir, "ffplay.exe"));
+            this.copyExecutableResource("bin/win/ffprobe.exe", new File(appdataDir, "ffprobe.exe"));
 
-            executablesPath = appdataDir.toPath();
+            this.executablesPath = appdataDir.toPath();
         } else {
             throw new RuntimeException("OS not supported");
         }
     }
 
-    private static void copyExecutableResource(final String resource, final File target)
+    private void copyExecutableResource(final String resource, final File target)
     {
         try {
             Files.copy(Objects.requireNonNull(VideoBlurplefier.class.getClassLoader().getResource(resource)).openStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
