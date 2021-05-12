@@ -26,14 +26,6 @@ public class VideoBlurplefier
     public VideoBlurplefier() throws UnsupportedLookAndFeelException
     {
         //        copyResources(); // TODO: re-enable when fixed
-
-        final TrayMessage trayMessage = new TrayMessage(this);
-        try {
-            trayMessage.displayTray("weebo", TrayIcon.MessageType.INFO);
-        } catch (final AWTException | MalformedURLException e) {
-            e.printStackTrace();
-        }
-
         System.out.println("Loading GUI...");
         UIManager.setLookAndFeel(new MaterialLookAndFeel(new BlurpleDarkTheme()));
         UIManager.put("Button[border].enable", false);
