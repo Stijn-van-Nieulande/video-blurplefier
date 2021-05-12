@@ -2,12 +2,16 @@ package dev.stijn.videoblurplefier;
 
 import dev.stijn.videoblurplefier.gui.BlurpleDarkTheme;
 import dev.stijn.videoblurplefier.gui.MainGui;
+import dev.stijn.videoblurplefier.tray.TrayMessage;
 import mdlaf.MaterialLookAndFeel;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import java.awt.AWTException;
+import java.awt.TrayIcon;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -22,6 +26,13 @@ public class VideoBlurplefier
     public VideoBlurplefier() throws UnsupportedLookAndFeelException
     {
         //        copyResources(); // TODO: re-enable when fixed
+
+        final TrayMessage trayMessage = new TrayMessage(this);
+        try {
+            trayMessage.displayTray("weebo", TrayIcon.MessageType.INFO);
+        } catch (final AWTException | MalformedURLException e) {
+            e.printStackTrace();
+        }
 
         System.out.println("Loading GUI...");
         UIManager.setLookAndFeel(new MaterialLookAndFeel(new BlurpleDarkTheme()));

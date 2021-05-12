@@ -1,28 +1,36 @@
 package dev.stijn.videoblurplefier.tray;
 
-import javax.swing.*;
-import java.awt.*;
+import dev.stijn.videoblurplefier.VideoBlurplefier;
+import org.jetbrains.annotations.NotNull;
+
+import javax.swing.ImageIcon;
+import java.awt.AWTException;
+import java.awt.Image;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.net.MalformedURLException;
 import java.net.URL;
-
+import java.util.Objects;
 
 public class TrayMessage
 {
-    public static void main(String[] args, TrayIcon.MessageType type, String message) throws AWTException, MalformedURLException {
-        if (SystemTray.isSupported()) {
-            displayTray(message, type);
-        } else {
-            System.err.println("System tray not supported!");
-        }
+    private final VideoBlurplefier videoBlurplefier;
+
+    public TrayMessage(@NotNull final VideoBlurplefier videoBlurplefier)
+    {
+        this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
     }
 
-    public static void displayTray(String message, TrayIcon.MessageType type) throws AWTException, MalformedURLException {
+    public void displayTray(final String message, final TrayIcon.MessageType type) throws AWTException, MalformedURLException
+    {
+        if (!SystemTray.isSupported()) throw new RuntimeException("System tray is not supported");
 
-        URL imageres = TrayMessage.class.getClassLoader().getResource("resources/trayicon.png");
-        Image image = new ImageIcon(imageres).getImage();
+        final URL imageResource = this.videoBlurplefier.getClass().getClassLoader().getResource("resources/trayicon.png");
+        if (imageResource == null) return;
+        final Image image = new ImageIcon(imageResource).getImage();
         //Obtain only one instance of the SystemTray object
-        SystemTray tray = SystemTray.getSystemTray();
-        TrayIcon trayIcon = new TrayIcon(image, "Tray Demo");
+        final SystemTray tray = SystemTray.getSystemTray();
+        final TrayIcon trayIcon = new TrayIcon(image, "Tray Demo");
 
         trayIcon.setImageAutoSize(true);
         //Set tooltip text for the tray icon
