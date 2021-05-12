@@ -25,7 +25,7 @@ public class TrayMessage
     {
         if (!SystemTray.isSupported()) throw new RuntimeException("System tray is not supported");
 
-        final URL imageResource = this.videoBlurplefier.getClass().getClassLoader().getResource("resources/trayicon.png");
+        final URL imageResource = this.videoBlurplefier.getClass().getClassLoader().getResource("trayicon.png");
         if (imageResource == null) return;
         final Image image = new ImageIcon(imageResource).getImage();
         //Obtain only one instance of the SystemTray object
