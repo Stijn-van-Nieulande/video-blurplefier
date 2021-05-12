@@ -6,7 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 
-public class traymsg
+public class TrayMessage
 {
     public static void main(String[] args, TrayIcon.MessageType type, String message) throws AWTException, MalformedURLException {
         if (SystemTray.isSupported()) {
@@ -18,7 +18,7 @@ public class traymsg
 
     public static void displayTray(String message, TrayIcon.MessageType type) throws AWTException, MalformedURLException {
 
-        URL imageres = traymsg.class.getClassLoader().getResource("resources/trayicon.png");
+        URL imageres = TrayMessage.class.getClassLoader().getResource("resources/trayicon.png");
         Image image = new ImageIcon(imageres).getImage();
         //Obtain only one instance of the SystemTray object
         SystemTray tray = SystemTray.getSystemTray();
