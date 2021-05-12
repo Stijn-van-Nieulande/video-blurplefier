@@ -285,7 +285,7 @@ public class MainGui extends JPanel
     public static void open(@NotNull final VideoBlurplefier videoBlurplefier)
     {
         // TODO: Make this less staticy
-        final JFrame frame = new JFrame("Video Blurplefier - 1.0.0");
+        final JFrame frame = new JFrame("Video Blurplefier - 2.0.0");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
