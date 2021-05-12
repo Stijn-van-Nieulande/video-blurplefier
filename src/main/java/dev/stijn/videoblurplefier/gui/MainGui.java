@@ -190,8 +190,8 @@ public class MainGui extends JPanel
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.outputFilenameField.getText().equals("")) {
-                final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
+            if (this.nameEntry.getText().equals("")) {
+                final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so output will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
                 if (result != JOptionPane.YES_OPTION) return;
@@ -201,7 +201,7 @@ public class MainGui extends JPanel
         });
 
         this.cancelButton.addActionListener(e -> {
-            final int result = JOptionPane.showConfirmDialog(frame, "WARNING! \n by stopping the render process, THE VIDEO WILL NOT BE FULLY RENDERED. Stop Process?", "Render: Warning",
+            final int result = JOptionPane.showConfirmDialog(frame, "WARNING! by stopping the render process, THE VIDEO WILL NOT BE FULLY RENDERED. Stop Process?", "Render: Warning",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (result != JOptionPane.YES_OPTION) return;
