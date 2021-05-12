@@ -43,6 +43,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -234,6 +235,8 @@ public class MainGui extends JPanel
             this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
             this.loggerAppend("\n Now ready for more jobs.");
             this.cancelButton.setEnabled(false);
+            this.renderButton.setText("Render!");
+            this.renderButton.setEnabled(true);
         });
 
         this.inputFileButton.addActionListener(e -> {
@@ -378,6 +381,8 @@ public class MainGui extends JPanel
             return;
         }
 
+        this.renderButton.setText("Rendering...");
+        this.renderButton.setEnabled(false);
         this.clearLogbox();
         this.setProgressbarText("Waiting For analyzation to finish... ");
         this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
@@ -431,9 +436,24 @@ public class MainGui extends JPanel
                 this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
                 this.loggerAppend("\n Now ready for more jobs.");
                 this.cancelButton.setEnabled(false);
+                this.renderButton.setText("Render!");
+                this.renderButton.setEnabled(true);
+                try {
+                    this.videoBlurplefier.getTrayManager().displayTray("Your Render Has Completed!", TrayIcon.MessageType.INFO);
+                } catch (AWTException e) {
+                    e.printStackTrace();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
             }
         });
-
+        try {
+            this.videoBlurplefier.getTrayManager().displayTray("Render started. You can minimize the window, and a notification will appear when done!", TrayIcon.MessageType.INFO);
+        } catch (AWTException e) {
+            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
         this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
         this.renderThread.start();
         this.cancelButton.setEnabled(true);
