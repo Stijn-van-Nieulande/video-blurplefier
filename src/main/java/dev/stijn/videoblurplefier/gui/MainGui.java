@@ -36,12 +36,14 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 import javax.swing.text.StyledDocument;
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.TrayIcon;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -440,18 +442,14 @@ public class MainGui extends JPanel
                 this.renderButton.setEnabled(true);
                 try {
                     this.videoBlurplefier.getTrayManager().displayTray("Your Render Has Completed!", TrayIcon.MessageType.INFO);
-                } catch (AWTException e) {
-                    e.printStackTrace();
-                } catch (MalformedURLException e) {
+                } catch (AWTException | MalformedURLException e) {
                     e.printStackTrace();
                 }
             }
         });
         try {
             this.videoBlurplefier.getTrayManager().displayTray("Render started. You can minimize the window, and a notification will appear when done!", TrayIcon.MessageType.INFO);
-        } catch (AWTException e) {
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
+        } catch (AWTException | MalformedURLException e) {
             e.printStackTrace();
         }
         this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
