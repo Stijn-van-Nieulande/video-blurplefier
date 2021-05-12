@@ -12,11 +12,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
-public class TrayMessage
+public class TrayManager
 {
     private final VideoBlurplefier videoBlurplefier;
 
-    public TrayMessage(@NotNull final VideoBlurplefier videoBlurplefier)
+    public TrayManager(@NotNull final VideoBlurplefier videoBlurplefier)
     {
         this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
     }

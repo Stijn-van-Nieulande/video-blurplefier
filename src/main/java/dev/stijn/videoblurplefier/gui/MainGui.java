@@ -7,6 +7,7 @@ import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
+import dev.stijn.videoblurplefier.VideoBlurplefier;
 import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,9 @@ public class MainGui extends JPanel
 {
     private static final Path FFMPEG_BIN_PATH = new File(System.getenv("APPDATA"), "video-blurplefier/bin").toPath();
 
+    @NotNull
+    private final VideoBlurplefier videoBlurplefier;
+
     private JLabel inputFileLabel;
     private JTextField inputFileField;
     private JButton inputFileButton;
@@ -53,8 +57,10 @@ public class MainGui extends JPanel
     private JButton cancelButton;
     private Thread renderThread;
 
-    public MainGui(final JFrame frame)
+    public MainGui(@NotNull final VideoBlurplefier videoBlurplefier, final JFrame frame)
     {
+        this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
+
         final JPanel inputsPanel = new JPanel();
         final JPanel progressPanel = new JPanel();
 
@@ -244,13 +250,14 @@ public class MainGui extends JPanel
         });
     }
 
-    public static void open()
+    public static void open(@NotNull final VideoBlurplefier videoBlurplefier)
     {
+        // TODO: Make this less staticy
         final JFrame frame = new JFrame("Video Blurplefier - 1.0.0");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
-        frame.getContentPane().add(new MainGui(frame));
+        frame.getContentPane().add(new MainGui(Objects.requireNonNull(videoBlurplefier), frame));
         frame.pack();
         frame.setVisible(true);
     }
