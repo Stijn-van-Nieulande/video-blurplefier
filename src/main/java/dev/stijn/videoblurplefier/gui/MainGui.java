@@ -188,7 +188,7 @@ public class MainGui extends JPanel
         this.add(progressPanel);
 
         try {
-            frame.setIconImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("favicon.png"))));
+            frame.setIconImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("favicon-rounded.png"))));
         } catch (final Exception e) {
             e.printStackTrace();
         }
