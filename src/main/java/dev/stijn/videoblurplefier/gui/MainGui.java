@@ -190,7 +190,7 @@ public class MainGui extends JPanel
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.nameEntry.getText().equals("")) {
+            if (this.outputFilenameField.getText().equals("")) {
                 final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so output will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
