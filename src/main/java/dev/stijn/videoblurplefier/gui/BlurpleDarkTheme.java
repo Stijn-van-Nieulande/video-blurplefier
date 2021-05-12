@@ -9,6 +9,7 @@ import mdlaf.utils.icons.MaterialIconFont;
 
 import javax.swing.BorderFactory;
 import javax.swing.UIDefaults;
+import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.BorderUIResource;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.Color;
@@ -114,6 +115,12 @@ public class BlurpleDarkTheme extends AbstractMaterialTheme
         super.installUIDefault(table);
         table.put("Menu.selectionForeground", MaterialColors.BLACK);
         table.put("MenuItem.selectionForeground", MaterialColors.BLACK);
+
+        table.put("Button[border].enable", false);
+        table.put("Button[border].toAll", false);
+
+        table.put("OptionPane.enableIcon", true);
+        table.put("OptionPane.border", new BorderUIResource(new EmptyBorder(5, 5, 5, 5)));
     }
 
     public String getName()

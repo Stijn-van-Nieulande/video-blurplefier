@@ -8,9 +8,12 @@ import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
 import dev.stijn.videoblurplefier.VideoBlurplefier;
+import dev.stijn.videoblurplefier.binaries.BinaryManager;
 import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
+import dev.stijn.videoblurplefier.util.logging.SimpleLogHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -22,9 +25,17 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -35,14 +46,14 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 
 public class MainGui extends JPanel
 {
-    private static final Path FFMPEG_BIN_PATH = new File(System.getenv("APPDATA"), "video-blurplefier/bin").toPath();
-
     @NotNull
     private final VideoBlurplefier videoBlurplefier;
 
+    private final JFrame frame;
     private JLabel inputFileLabel;
     private JTextField inputFileField;
     private JButton inputFileButton;
@@ -52,7 +63,8 @@ public class MainGui extends JPanel
     private JLabel outputFilenameLabel;
     private JTextField outputFilenameField;
     private JProgressBar progressbar;
-    private JTextArea logArea;
+    private JTextPane logArea;
+    private JScrollPane logAreaScrollPane;
     private JButton renderButton;
     private JButton cancelButton;
     private Thread renderThread;
@@ -60,6 +72,7 @@ public class MainGui extends JPanel
     public MainGui(@NotNull final VideoBlurplefier videoBlurplefier, final JFrame frame)
     {
         this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
+        this.frame = frame;
 
         final JPanel inputsPanel = new JPanel();
         final JPanel progressPanel = new JPanel();
@@ -81,7 +94,8 @@ public class MainGui extends JPanel
         this.outputFilenameLabel = new JLabel("Output File Name");
         this.outputFilenameField = new JTextField(5);
         this.progressbar = new JProgressBar();
-        this.logArea = new JTextArea(5, 5);
+        this.logArea = new JTextPane();
+        this.logAreaScrollPane = new JScrollPane(this.logArea);
         this.cancelButton = new JButton("Halt Cycle");
         this.renderButton = new JButton("Render!");
 
@@ -97,14 +111,15 @@ public class MainGui extends JPanel
         this.outputFileField.setText("Select a file below...");
         this.progressbar.setStringPainted(true);
         this.cancelButton.setEnabled(false);
+        this.logArea.setBorder(new EmptyBorder(new Insets(10, 10, 10, 10)));
 
         // Set dimensions
         this.inputFileField.setMinimumSize(new Dimension(-1, 40));
         this.outputFileField.setMinimumSize(new Dimension(-1, 40));
         this.outputFilenameField.setMinimumSize(new Dimension(-1, 40));
 
+        this.logAreaScrollPane.setMinimumSize(new Dimension(-1, 100));
         this.renderButton.setMinimumSize(new Dimension(80, 100));
-        this.logArea.setMinimumSize(new Dimension(-1, 100));
 
         // Init inputs grid
         inputsPanel.setLayout(new GridBagLayout());
@@ -152,7 +167,7 @@ public class MainGui extends JPanel
         progressPanel.add(this.cancelButton, constraints);
         constraints.gridy = 1;
         constraints.gridx = 0;
-        progressPanel.add(this.logArea, constraints);
+        progressPanel.add(this.logAreaScrollPane, constraints);
         constraints.gridx = 1;
         progressPanel.add(this.renderButton, constraints);
 
@@ -175,7 +190,6 @@ public class MainGui extends JPanel
             e.printStackTrace();
         }
 
-        this.logArea.setAutoscrolls(true);
         this.initLogger();
         this.setProgressbarText("No action running.");
         this.setBackground(new Color(35, 39, 42));
@@ -265,13 +279,59 @@ public class MainGui extends JPanel
     // util functions
     public void initLogger()
     {
-        this.logArea.append("---- Application Started Successfully, awaiting input ---- \n ");
-        this.logArea.append("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101");
+        // this.logArea.getDocument().addDocumentListener(new SimpleDocumentUpdateListener(documentEvent ->
+        //         this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum())
+        // ));
+
+        this.loggerAppend("---- Application Started Successfully, awaiting input ----\n");
+        this.loggerAppend("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101\n\n\n");
+
+        final Color colorRed = new Color(248, 51, 60);
+        final Color colorOrange = new Color(221, 164, 72);
+        final Color colorBlurple = new Color(114, 137, 218);
+
+        BinaryManager.LOGGER.addHandler(new SimpleLogHandler(logRecord -> {
+            Color levelColor = colorBlurple;
+            Color messageColor = null;
+
+            if (logRecord.getLevel().equals(Level.SEVERE)) {
+                levelColor = colorRed;
+                messageColor = colorRed;
+            }
+            if (logRecord.getLevel().equals(Level.WARNING)) {
+                levelColor = colorOrange;
+                messageColor = colorOrange;
+            }
+
+            this.loggerAppend("[" + logRecord.getLevel() + "]", levelColor);
+            this.loggerAppend(" " + logRecord.getMessage() + "\n", messageColor);
+        }));
     }
 
-    public void loggerAppend(final String args)
+    public void loggerAppend(final String message, @Nullable final Color color)
     {
-        this.logArea.append(String.valueOf(args));
+        final Color finalColor = color == null ? Color.WHITE : color;
+        final StyleContext styleContext = StyleContext.getDefaultStyleContext();
+        AttributeSet attributeSet = styleContext.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, finalColor);
+
+        attributeSet = styleContext.addAttribute(attributeSet, StyleConstants.FontFamily, "Lucida Console");
+        attributeSet = styleContext.addAttribute(attributeSet, StyleConstants.Alignment, StyleConstants.ALIGN_JUSTIFIED);
+
+        final StyledDocument styledDocument = this.logArea.getStyledDocument();
+        final int length = this.logArea.getDocument().getLength();
+
+        try {
+            styledDocument.insertString(length, message, attributeSet);
+        } catch (final BadLocationException e) {
+            e.printStackTrace();
+        }
+
+        this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum());
+    }
+
+    public void loggerAppend(final String message)
+    {
+        this.loggerAppend(message, null);
     }
 
     public void clearLogbox()
@@ -308,12 +368,22 @@ public class MainGui extends JPanel
 
     private void processVideo()
     {
+        @Nullable final File binPath = this.videoBlurplefier.getBinaryManager().getFfmpegBinDirectory();
+
+        if (binPath == null || !binPath.exists()) {
+            JOptionPane.showMessageDialog(this.frame,
+                    "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
+                    "FFmpeg not found!",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         this.clearLogbox();
         this.setProgressbarText("Waiting For analyzation to finish... ");
         this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
         final String pathToVideo = this.inputFileField.getText();
-        final FFprobeResult probeOut = FFprobe.atPath(FFMPEG_BIN_PATH)
+        final FFprobeResult probeOut = FFprobe.atPath(binPath.toPath())
                 .setShowStreams(true)
                 .setInput(pathToVideo)
                 .execute();
@@ -325,6 +395,12 @@ public class MainGui extends JPanel
             if (stream.getCodecType().equals(StreamType.VIDEO)) {
                 videoWidth = stream.getCodedWidth();
                 videoHeight = stream.getCodedHeight();
+                System.out.println("--- DEBUG ---");
+                System.out.println("CodecName: " + stream.getCodecName());
+                System.out.println("CodecTagString: " + stream.getCodecTagString());
+                System.out.println("CodecTag: " + stream.getCodecTag());
+                System.out.println("CodecLongName: " + stream.getCodecLongName());
+                System.out.println("CodecType: " + stream.getCodecType());
                 break;
             }
             this.loggerAppend("\n type: " + stream.getCodecType()
@@ -339,9 +415,9 @@ public class MainGui extends JPanel
         final String fileName = (this.getFileName() == null ? "output" : this.getFileName()) + "." + fileExtension;
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
-        final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(inputFile.toPath());
+        final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(binPath.toPath(), inputFile.toPath());
         this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(FFMPEG_BIN_PATH, videoWidth, videoHeight);
+        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
@@ -363,13 +439,14 @@ public class MainGui extends JPanel
         this.cancelButton.setEnabled(true);
     }
 
-    private long getExactVideoDurationMilliseconds(@NotNull final Path videoInputPath)
+    private long getExactVideoDurationMilliseconds(@NotNull final Path binPath, @NotNull final Path videoInputPath)
     {
+        Objects.requireNonNull(binPath);
         Objects.requireNonNull(videoInputPath);
 
         final AtomicLong durationMillis = new AtomicLong();
 
-        FFmpeg.atPath(FFMPEG_BIN_PATH)
+        FFmpeg.atPath(binPath)
                 .addInput(UrlInput.fromPath(videoInputPath))
                 .addOutput(new NullOutput())
                 .setProgressListener(progress -> durationMillis.set(progress.getTimeMillis()))
