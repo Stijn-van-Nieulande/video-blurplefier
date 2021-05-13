@@ -7,10 +7,17 @@ import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
+import dev.stijn.videoblurplefier.VideoBlurplefier;
+import dev.stijn.videoblurplefier.binaries.BinaryManager;
 import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
+import dev.stijn.videoblurplefier.util.logging.SimpleLogHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -18,133 +25,203 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
+import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.TrayIcon;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 
 public class MainGui extends JPanel
 {
-    private static final Path FFMPEG_BIN_PATH = new File(System.getenv("APPDATA"), "video-blurplefier/bin").toPath();
+    @NotNull
+    private final VideoBlurplefier videoBlurplefier;
 
-    private JButton renderButton;
+    private final JFrame frame;
     private JLabel inputFileLabel;
-    private JTextField fileInput;
-    private JLabel outputFilename;
-    private JLabel outputDir;
-    private JTextField outputLocation;
-    private JTextField nameEntry;
-    private JButton selectOutputFile;
-    private JButton inputSelectButton;
+    private JTextField inputFileField;
+    private JButton inputFileButton;
+    private JLabel outputFileLabel;
+    private JTextField outputFileField;
+    private JButton outputFileButton;
+    private JLabel outputFilenameLabel;
+    private JTextField outputFilenameField;
     private JProgressBar progressbar;
-    private JTextArea logArea;
+    private JTextPane logArea;
+    private JScrollPane logAreaScrollPane;
+    private JButton renderButton;
     private JButton cancelButton;
-    private Thread renderthread;
+    private Thread renderThread;
 
-    public MainGui(final JFrame frame)
+    // Move Colors So they can be accessed everywhere
+
+    final Color colorRed = new Color(248, 51, 60);
+    final Color colorOrange = new Color(221, 164, 72);
+    final Color colorBlurple = new Color(114, 137, 218);
+    final Color colorWhite = new Color(255, 255, 255);
+
+    public MainGui(@NotNull final VideoBlurplefier videoBlurplefier, final JFrame frame)
     {
+        this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
+        this.frame = frame;
+
+        final JPanel inputsPanel = new JPanel();
+        final JPanel progressPanel = new JPanel();
+
+        final ImageIcon logo = new ImageIcon();
+        try {
+            logo.setImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("logo-small.png"))));
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
         //construct components
-        this.renderButton = new JButton("Render!");
         this.inputFileLabel = new JLabel("Input File");
-        this.fileInput = new JTextField(5);
-        this.outputFilename = new JLabel("Output File (Name)");
-        this.outputDir = new JLabel("Output Location ");
-        this.outputLocation = new JTextField(5);
-        this.nameEntry = new JTextField(5);
-        this.selectOutputFile = new JButton("Select Output...");
-        this.inputSelectButton = new JButton("Select Input...");
+        this.inputFileField = new JTextField(5);
+        this.inputFileButton = new JButton("Select Input File");
+        this.outputFileLabel = new JLabel("Output Location ");
+        this.outputFileField = new JTextField(5);
+        this.outputFileButton = new JButton("Select Output Directory");
+        this.outputFilenameLabel = new JLabel("Output File Name");
+        this.outputFilenameField = new JTextField(5);
         this.progressbar = new JProgressBar();
-        this.logArea = new JTextArea(5, 5);
+        this.logArea = new JTextPane();
+        this.logAreaScrollPane = new JScrollPane(this.logArea);
         this.cancelButton = new JButton("Halt Cycle");
+        this.renderButton = new JButton("Render!");
 
         //set components properties
         this.renderButton.setToolTipText("Render the frames");
         this.inputFileLabel.setToolTipText("The input file (In .mp4 or something like that, must be a video file)");
-        this.outputLocation.setToolTipText("The loaction you want to send the finshed file to.");
-        this.nameEntry.setToolTipText("The name of the outputed file");
+        this.outputFileField.setToolTipText("The loaction you want to send the finshed file to.");
+        this.outputFilenameField.setToolTipText("The name of the outputed file");
         this.logArea.setEditable(false);
-        this.fileInput.setEditable(false);
-        this.fileInput.setText("Select a file below...");
-        this.outputLocation.setEditable(false);
-        this.outputLocation.setText("Select a file below...");
+        this.inputFileField.setEditable(false);
+        this.inputFileField.setText("Select a file below...");
+        this.outputFileField.setEditable(false);
+        this.outputFileField.setText("Select a file below...");
         this.progressbar.setStringPainted(true);
         this.cancelButton.setEnabled(false);
+        this.logArea.setBorder(new EmptyBorder(new Insets(10, 10, 10, 10)));
 
-        // set COLORS
-        this.logArea.setBackground(new Color(114, 137, 218));
-        this.logArea.setForeground(new Color(255, 255, 255));
-        this.selectOutputFile.setBackground(new Color(114, 137, 218));
-        this.selectOutputFile.setForeground(new Color(255, 255, 255));
-        this.inputSelectButton.setBackground(new Color(114, 137, 218));
-        this.inputSelectButton.setForeground(new Color(255, 255, 255));
-        this.cancelButton.setBackground(new Color(114, 137, 218));
-        this.renderButton.setBackground(new Color(114, 137, 218));
-        this.renderButton.setForeground(new Color(255, 255, 255));
+        // Set dimensions
+        this.inputFileField.setMinimumSize(new Dimension(-1, 40));
+        this.outputFileField.setMinimumSize(new Dimension(-1, 40));
+        this.outputFilenameField.setMinimumSize(new Dimension(-1, 40));
 
-        this.inputFileLabel.setForeground(new Color(255, 255, 255));
-        this.outputFilename.setForeground(new Color(255, 255, 255));
-        this.outputDir.setForeground(new Color(255, 255, 255));
+        this.logAreaScrollPane.setMinimumSize(new Dimension(-1, 100));
+        this.renderButton.setMinimumSize(new Dimension(80, 100));
 
+        // Init inputs grid
+        inputsPanel.setLayout(new GridBagLayout());
+        final GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.ipady = 30;
+        constraints.insets = new Insets(3, 15, 3, 15);
+
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        inputsPanel.add(this.inputFileLabel, constraints);
+        constraints.gridy = 1;
+        inputsPanel.add(this.inputFileField, constraints);
+        constraints.gridy = 2;
+        inputsPanel.add(this.inputFileButton, constraints);
+
+        constraints.gridx = 1;
+        constraints.gridy = 0;
+        inputsPanel.add(this.outputFileLabel, constraints);
+        constraints.gridy = 1;
+        inputsPanel.add(this.outputFileField, constraints);
+        constraints.gridy = 2;
+        inputsPanel.add(this.outputFileButton, constraints);
+
+        constraints.gridy = 4;
+        inputsPanel.add(this.outputFilenameField, constraints);
+        constraints.gridy = 3;
+        constraints.insets = new Insets(33, 15, 3, 15);
+        inputsPanel.add(this.outputFilenameLabel, constraints);
+
+        // Init progress grid
+        progressPanel.setLayout(new GridBagLayout());
+        final Border padding = BorderFactory.createEmptyBorder(30, 12, 15, 12);
+        progressPanel.setBorder(padding);
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = .8;
+        constraints.insets = new Insets(3, 5, 3, 5);
+
+        progressPanel.add(this.progressbar, constraints);
+        constraints.gridx = 1;
+        constraints.weightx = .2;
+        progressPanel.add(this.cancelButton, constraints);
+        constraints.gridy = 1;
+        constraints.gridx = 0;
+        progressPanel.add(this.logAreaScrollPane, constraints);
+        constraints.gridx = 1;
+        progressPanel.add(this.renderButton, constraints);
 
         //adjust size and set layout
-        this.setPreferredSize(new Dimension(628, 371));
-        this.setLayout(null);
+        this.setPreferredSize(new Dimension(980, 570));
+        this.setLayout(new GridLayout(3, 0));
 
-        //add components
-        this.add(this.renderButton);
-        this.add(this.inputFileLabel);
-        this.add(this.fileInput);
-        this.add(this.outputFilename);
-        this.add(this.outputDir);
-        this.add(this.outputLocation);
-        this.add(this.nameEntry);
-        this.add(this.selectOutputFile);
-        this.add(this.inputSelectButton);
-        this.add(this.logArea);
-        this.add(this.progressbar);
-        this.add(this.cancelButton);
+        // Stupid way to show logo....
+        final JLabel logoLabel = new JLabel();
+        logoLabel.setHorizontalAlignment(JLabel.CENTER);
+        logoLabel.setIcon(logo);
 
-        //set component bounds (only needed by Absolute Positioning)
-        this.renderButton.setBounds(505, 310, 110, 40);
-        this.inputFileLabel.setBounds(15, 20, 160, 40);
-        this.fileInput.setBounds(15, 50, 175, 20);
-        this.outputFilename.setBounds(290, 30, 130, 25);
-        this.outputDir.setBounds(15, 100, 100, 25);
-        this.outputLocation.setBounds(15, 125, 190, 20);
-        this.nameEntry.setBounds(290, 50, 170, 20);
-        this.selectOutputFile.setBounds(15, 150, 120, 25);
-        this.inputSelectButton.setBounds(15, 75, 115, 25);
-        this.logArea.setBounds(5, 245, 490, 120);
-        this.progressbar.setBounds(5, 215, 405, 25);
-        this.cancelButton.setBounds(420, 215, 100, 25);
-        this.logArea.setAutoscrolls(true);
+        this.add(logoLabel);
+        this.add(inputsPanel);
+        this.add(progressPanel);
+
+        try {
+            frame.setIconImage(ImageIO.read(Objects.requireNonNull(this.getClass().getClassLoader().getResource("favicon-rounded.png"))));
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
         this.initLogger();
-        this.setProgressbarPercentage(100);
         this.setProgressbarText("No action running.");
         this.setBackground(new Color(35, 39, 42));
 
 
         this.renderButton.addActionListener(e -> {
-            if (this.fileInput.getText().equals("Select a file below...")) {
+            if (this.inputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an input file! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.outputLocation.getText().equals("Select a file below...")) {
+            if (this.outputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
                         "Please Select an output directory! (Fatal)",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (this.nameEntry.getText().equals("")) {
-                final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so blerp-out will be used. \n Continue with default file name?", "Render: Warning",
+            if (this.outputFilenameField.getText().equals("")) {
+                final int result = JOptionPane.showConfirmDialog(frame, "No File name was given, so output will be used. \n Continue with default file name?", "Render: Warning",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.QUESTION_MESSAGE);
                 if (result != JOptionPane.YES_OPTION) return;
@@ -154,56 +231,65 @@ public class MainGui extends JPanel
         });
 
         this.cancelButton.addActionListener(e -> {
-            final int result = JOptionPane.showConfirmDialog(frame, "WARNING! \n by stopping the render process, THE VIDEO WILL NOT BE FULLY RENDERED. Stop Process?", "Render: Warning",
+            final int result = JOptionPane.showConfirmDialog(frame, "WARNING! by stopping the render process, THE VIDEO WILL NOT BE FULLY RENDERED. Stop Process?", "Render: Warning",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
             if (result != JOptionPane.YES_OPTION) return;
-            renderthread.interrupt();
+            this.renderThread.interrupt();
             this.setProgressbarText("Render Stopped.");
             this.setProgressbarPercentage(100);
             this.clearLogbox();
-            this.loggerAppend("\n --- Render Stopped ---");
-            this.loggerAppend("\n Warning: this video is partial. It may not even play. ");
-            this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
-            this.loggerAppend("\n Now ready for more jobs.");
+            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
+            this.loggerAppend(" " + "Render was closed (THREAD_SIGTERM) " + "\n", colorOrange);
+            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
+            this.loggerAppend(" " + "This video is partial. It may not even play. " + "\n", colorOrange);
+            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+            this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
+            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+            this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
             this.cancelButton.setEnabled(false);
+            this.renderButton.setText("Render!");
+            this.renderButton.setEnabled(true);
         });
 
-        this.inputSelectButton.addActionListener(e -> {
+        this.inputFileButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             final int option = fileChooser.showOpenDialog(frame);
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                this.fileInput.setText(file.getPath());
-                this.loggerAppend("\n Set input file to: " + file.getPath());
+                this.inputFileField.setText(file.getPath());
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Set Input File to: " + this.getInputfile() + "\n", colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
         });
 
-        this.selectOutputFile.addActionListener(e -> {
+        this.outputFileButton.addActionListener(e -> {
             final JFileChooser fileChooser = new JFileChooser();
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             final int option = fileChooser.showOpenDialog(frame);
 
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
-                this.outputLocation.setText(file.getPath());
-                this.loggerAppend("\n Set output directory to: " + file.getPath());
+                this.outputFileField.setText(file.getPath());
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Set Output Directory to: " + this.getOutputLocation() + "\n", colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
         });
     }
 
-    public static void open()
+    public static void open(@NotNull final VideoBlurplefier videoBlurplefier)
     {
-        final JFrame frame = new JFrame("Video Blurplefier - 1.0.0");
+        // TODO: Make this less staticy
+        final JFrame frame = new JFrame("Video Blurplefier - 2.0.0");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
-        frame.getContentPane().add(new MainGui(frame));
+        frame.getContentPane().add(new MainGui(Objects.requireNonNull(videoBlurplefier), frame));
         frame.pack();
         frame.setVisible(true);
     }
@@ -211,13 +297,58 @@ public class MainGui extends JPanel
     // util functions
     public void initLogger()
     {
-        this.logArea.append("---- Application Started Successfully, awaiting input ---- \n ");
-        this.logArea.append("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101");
+        // this.logArea.getDocument().addDocumentListener(new SimpleDocumentUpdateListener(documentEvent ->
+        //         this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum())
+        // ));
+
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Application Started Successfully, awaiting input" + "\n", colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "This tool was created by sticks#6436 and Stijn | CodingWarrior#0101" + "\n", colorWhite);
+
+
+        BinaryManager.LOGGER.addHandler(new SimpleLogHandler(logRecord -> {
+            Color levelColor = colorBlurple;
+            Color messageColor = null;
+
+            if (logRecord.getLevel().equals(Level.SEVERE)) {
+                levelColor = colorRed;
+                messageColor = colorRed;
+            }
+            if (logRecord.getLevel().equals(Level.WARNING)) {
+                levelColor = colorOrange;
+                messageColor = colorOrange;
+            }
+
+            this.loggerAppend("[" + logRecord.getLevel() + "]", levelColor);
+            this.loggerAppend(" " + logRecord.getMessage() + "\n", messageColor);
+        }));
     }
 
-    public void loggerAppend(final String args)
+    public void loggerAppend(final String message, @Nullable final Color color)
     {
-        this.logArea.append(String.valueOf(args));
+        final Color finalColor = color == null ? Color.WHITE : color;
+        final StyleContext styleContext = StyleContext.getDefaultStyleContext();
+        AttributeSet attributeSet = styleContext.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, finalColor);
+
+        attributeSet = styleContext.addAttribute(attributeSet, StyleConstants.FontFamily, "Lucida Console");
+        attributeSet = styleContext.addAttribute(attributeSet, StyleConstants.Alignment, StyleConstants.ALIGN_JUSTIFIED);
+
+        final StyledDocument styledDocument = this.logArea.getStyledDocument();
+        final int length = this.logArea.getDocument().getLength();
+
+        try {
+            styledDocument.insertString(length, message, attributeSet);
+        } catch (final BadLocationException e) {
+            e.printStackTrace();
+        }
+
+        this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum());
+    }
+
+    public void loggerAppend(final String message)
+    {
+        this.loggerAppend(message, null);
     }
 
     public void clearLogbox()
@@ -237,29 +368,44 @@ public class MainGui extends JPanel
 
     public String getInputfile()
     {
-        return this.fileInput.getText();
+        return this.inputFileField.getText();
     }
 
     public String getOutputLocation()
     {
-        return this.outputLocation.getText();
+        return this.outputFileField.getText();
     }
 
     public String getFileName()
     {
-        final String fileText = this.nameEntry.getText();
+        final String fileText = this.outputFilenameField.getText();
         if (fileText.isBlank()) return null;
         return fileText;
     }
 
     private void processVideo()
     {
+        this.renderButton.setText("Rendering...");
+        this.renderButton.setEnabled(false);
         this.clearLogbox();
         this.setProgressbarText("Waiting For analyzation to finish... ");
-        this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Starting Render, Step 1/2: Analyzing file" + "\n", colorWhite);
 
-        final String pathToVideo = this.fileInput.getText();
-        final FFprobeResult probeOut = FFprobe.atPath(FFMPEG_BIN_PATH)
+        @Nullable final File binPath = this.videoBlurplefier.getBinaryManager().getFfmpegBinDirectory();
+
+        if (binPath == null || !binPath.exists()) {
+            JOptionPane.showMessageDialog(this.frame,
+                    "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
+                    "FFmpeg not found!",
+                    JOptionPane.ERROR_MESSAGE);
+            this.loggerAppend("[" + "ERROR" + "]", colorRed);
+            this.loggerAppend(" " + "CRITICAL: FFmpeg libraries are not installed. Halting. (-20)" + "\n", colorOrange);
+            return;
+        }
+
+        final String pathToVideo = this.inputFileField.getText();
+        final FFprobeResult probeOut = FFprobe.atPath(binPath.toPath())
                 .setShowStreams(true)
                 .setInput(pathToVideo)
                 .execute();
@@ -271,12 +417,19 @@ public class MainGui extends JPanel
             if (stream.getCodecType().equals(StreamType.VIDEO)) {
                 videoWidth = stream.getCodedWidth();
                 videoHeight = stream.getCodedHeight();
+                System.out.println("The following is video information, these are not errors, just info.");
+                System.out.println("--- Video Information (DEBUG) ---");
+                System.out.println("CodecName: " + stream.getCodecName());
+                System.out.println("CodecTagString: " + stream.getCodecTagString());
+                System.out.println("CodecTag: " + stream.getCodecTag());
+                System.out.println("CodecLongName: " + stream.getCodecLongName());
+                System.out.println("CodecType: " + stream.getCodecType());
                 break;
             }
-            this.loggerAppend("\n type: " + stream.getCodecType()
-                    + "\n duration: " + stream.getDuration() + " seconds");
-            System.out.println("\n type: " + stream.getCodecType()
-                    + "\n duration: " + stream.getDuration() + " seconds");
+            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
+            this.loggerAppend(" " + "VideoType: " + stream.getCodecType() + "\n", colorWhite);
+            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
+            this.loggerAppend(" " + "Video Duration: (In Seconds) " + stream.getDuration() + "\n", colorWhite);
         }
         this.setProgressbarText("Waiting For render to start... ");
 
@@ -285,37 +438,56 @@ public class MainGui extends JPanel
         final String fileName = (this.getFileName() == null ? "output" : this.getFileName()) + "." + fileExtension;
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
-        final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(inputFile.toPath());
-        this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
-        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(FFMPEG_BIN_PATH, videoWidth, videoHeight);
+        final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(binPath.toPath(), inputFile.toPath());
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Starting Render Thread... " + "\n", colorWhite);
+        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
             this.setProgressbarPercentage(percents);
             this.setProgressbarText("Rendering: " + percents + "% complete.");
-            System.out.println(progress);
-            if(percents == 100) {
+            this.loggerAppend("[" + "RENDER" + "]", colorBlurple);
+            this.loggerAppend(" " + percents + "% complete." + "\n", colorWhite);
+            if (percents == 100) {
                 this.setProgressbarText("Render Complete.");
                 this.clearLogbox();
-                this.loggerAppend("--- Render Complete! ---");
-                this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
-                this.loggerAppend("\n Now ready for more jobs.");
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Render Complete!" + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
                 this.cancelButton.setEnabled(false);
+                this.renderButton.setText("Render!");
+                this.renderButton.setEnabled(true);
+                try {
+                    this.videoBlurplefier.getTrayManager().displayTray("Your Render Has Completed!", TrayIcon.MessageType.INFO);
+                } catch (AWTException | MalformedURLException e) {
+                    e.printStackTrace();
+                }
             }
         });
-
-        renderthread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
-        renderthread.start();
+        try {
+            this.videoBlurplefier.getTrayManager().displayTray("Render started. You can minimize the window, and a notification will appear when done!", TrayIcon.MessageType.INFO);
+        } catch (AWTException | MalformedURLException e) {
+            e.printStackTrace();
+        }
+        this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
+        this.renderThread.start();
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Render Thread started. " + "\n", colorWhite);
         this.cancelButton.setEnabled(true);
     }
 
-    private long getExactVideoDurationMilliseconds(@NotNull final Path videoInputPath)
+    private long getExactVideoDurationMilliseconds(@NotNull final Path binPath, @NotNull final Path videoInputPath)
     {
+        Objects.requireNonNull(binPath);
         Objects.requireNonNull(videoInputPath);
 
         final AtomicLong durationMillis = new AtomicLong();
 
-        FFmpeg.atPath(FFMPEG_BIN_PATH)
+        FFmpeg.atPath(binPath)
                 .addInput(UrlInput.fromPath(videoInputPath))
                 .addOutput(new NullOutput())
                 .setProgressListener(progress -> durationMillis.set(progress.getTimeMillis()))

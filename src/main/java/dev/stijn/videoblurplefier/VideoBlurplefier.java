@@ -1,74 +1,46 @@
 package dev.stijn.videoblurplefier;
 
+import dev.stijn.videoblurplefier.binaries.BinaryManager;
+import dev.stijn.videoblurplefier.gui.BlurpleDarkTheme;
 import dev.stijn.videoblurplefier.gui.MainGui;
+import dev.stijn.videoblurplefier.tray.TrayManager;
+import mdlaf.MaterialLookAndFeel;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Objects;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 public class VideoBlurplefier
 {
-    public static final String OS = System.getProperty("os.name").toLowerCase();
-    // public static final File HOME_DIR = new File(System.getProperty("user.home"), "video-blurplefier");
-    public static Path executablesPath = null;
+    @NotNull
+    private final TrayManager trayManager;
+    @NotNull
+    private final BinaryManager binaryManager;
 
-    public static void main(final String[] args)
+    public VideoBlurplefier() throws UnsupportedLookAndFeelException
     {
-//        copyResources(); // TODO: re-enable when fixed
+        this.trayManager = new TrayManager(this);
+        this.binaryManager = new BinaryManager();
 
-        System.out.println("Loading GUI...");
-        MainGui.open();
-        System.out.println("GUI Ready.");
+        UIManager.setLookAndFeel(new MaterialLookAndFeel(new BlurpleDarkTheme()));
+
+        MainGui.open(this);
+
+        new Thread(this.binaryManager::installBinaries).start();
     }
 
-    public static boolean isWindows()
+    public static void main(final String[] args) throws UnsupportedLookAndFeelException
     {
-        return OS.contains("win");
+        new VideoBlurplefier();
     }
 
-    public static boolean isMac()
+    public @NotNull TrayManager getTrayManager()
     {
-        return OS.contains("mac");
+        return this.trayManager;
     }
 
-    public static boolean isUnix()
+    public @NotNull BinaryManager getBinaryManager()
     {
-        return (OS.contains("nix") || OS.contains("nux") || OS.contains("aix"));
-    }
-
-    public static boolean isSolaris()
-    {
-        return OS.contains("sunos");
-    }
-
-    public static void copyResources()
-    {
-        // make sure the bin dir exists
-        // new File(HOME_DIR, "bin").mkdirs();
-
-        if (isWindows()) {
-            final File appdataDir = new File(System.getenv("APPDATA"), "video-blurplefier/bin");
-            appdataDir.mkdirs();
-
-            copyExecutableResource("bin/win/ffmpeg.exe", new File(appdataDir, "ffmpeg.exe"));
-            copyExecutableResource("bin/win/ffplay.exe", new File(appdataDir, "ffplay.exe"));
-            copyExecutableResource("bin/win/ffprobe.exe", new File(appdataDir, "ffprobe.exe"));
-
-            executablesPath = appdataDir.toPath();
-        } else {
-            throw new RuntimeException("OS not supported");
-        }
-    }
-
-    private static void copyExecutableResource(final String resource, final File target)
-    {
-        try {
-            Files.copy(Objects.requireNonNull(VideoBlurplefier.class.getClassLoader().getResource(resource)).openStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+        return this.binaryManager;
     }
 }
