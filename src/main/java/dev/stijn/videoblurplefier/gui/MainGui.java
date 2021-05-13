@@ -72,6 +72,13 @@ public class MainGui extends JPanel
     private JButton cancelButton;
     private Thread renderThread;
 
+    // Move Colors So they can be accessed everywhere
+
+    final Color colorRed = new Color(248, 51, 60);
+    final Color colorOrange = new Color(221, 164, 72);
+    final Color colorBlurple = new Color(114, 137, 218);
+    final Color colorWhite = new Color(255, 255, 255);
+
     public MainGui(@NotNull final VideoBlurplefier videoBlurplefier, final JFrame frame)
     {
         this.videoBlurplefier = Objects.requireNonNull(videoBlurplefier);
@@ -232,10 +239,14 @@ public class MainGui extends JPanel
             this.setProgressbarText("Render Stopped.");
             this.setProgressbarPercentage(100);
             this.clearLogbox();
-            this.loggerAppend("\n --- Render Stopped ---");
-            this.loggerAppend("\n Warning: this video is partial. It may not even play. ");
-            this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
-            this.loggerAppend("\n Now ready for more jobs.");
+            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
+            this.loggerAppend(" " + "Render was closed (THREAD_SIGTERM) " + "\n", colorOrange);
+            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
+            this.loggerAppend(" " + "This video is partial. It may not even play. " + "\n", colorOrange);
+            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+            this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
+            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+            this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
             this.cancelButton.setEnabled(false);
             this.renderButton.setText("Render!");
             this.renderButton.setEnabled(true);
@@ -248,7 +259,8 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.inputFileField.setText(file.getPath());
-                this.loggerAppend("\n Set input file to: " + file.getPath());
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Set Input File to: " + this.getInputfile() + "\n", colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -262,7 +274,8 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.outputFileField.setText(file.getPath());
-                this.loggerAppend("\n Set output directory to: " + file.getPath());
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Set Output Directory to: " + this.getOutputLocation() + "\n", colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -272,7 +285,7 @@ public class MainGui extends JPanel
     public static void open(@NotNull final VideoBlurplefier videoBlurplefier)
     {
         // TODO: Make this less staticy
-        final JFrame frame = new JFrame("Video Blurplefier - 1.0.0");
+        final JFrame frame = new JFrame("Video Blurplefier - 2.0.0");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
@@ -288,12 +301,11 @@ public class MainGui extends JPanel
         //         this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum())
         // ));
 
-        this.loggerAppend("---- Application Started Successfully, awaiting input ----\n");
-        this.loggerAppend("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101\n\n\n");
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Application Started Successfully, awaiting input" + "\n", colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "This tool was created by sticks#6436 and Stijn | CodingWarrior#0101" + "\n", colorWhite);
 
-        final Color colorRed = new Color(248, 51, 60);
-        final Color colorOrange = new Color(221, 164, 72);
-        final Color colorBlurple = new Color(114, 137, 218);
 
         BinaryManager.LOGGER.addHandler(new SimpleLogHandler(logRecord -> {
             Color levelColor = colorBlurple;
@@ -373,6 +385,13 @@ public class MainGui extends JPanel
 
     private void processVideo()
     {
+        this.renderButton.setText("Rendering...");
+        this.renderButton.setEnabled(false);
+        this.clearLogbox();
+        this.setProgressbarText("Waiting For analyzation to finish... ");
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Starting Render, Step 1/2: Analyzing file" + "\n", colorWhite);
+
         @Nullable final File binPath = this.videoBlurplefier.getBinaryManager().getFfmpegBinDirectory();
 
         if (binPath == null || !binPath.exists()) {
@@ -380,14 +399,10 @@ public class MainGui extends JPanel
                     "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
                     "FFmpeg not found!",
                     JOptionPane.ERROR_MESSAGE);
+            this.loggerAppend("[" + "ERROR" + "]", colorRed);
+            this.loggerAppend(" " + "CRITICAL: FFmpeg libraries are not installed. Halting. (-20)" + "\n", colorOrange);
             return;
         }
-
-        this.renderButton.setText("Rendering...");
-        this.renderButton.setEnabled(false);
-        this.clearLogbox();
-        this.setProgressbarText("Waiting For analyzation to finish... ");
-        this.loggerAppend("--- Starting Render, Step 1/2: Analyzing file ---");
 
         final String pathToVideo = this.inputFileField.getText();
         final FFprobeResult probeOut = FFprobe.atPath(binPath.toPath())
@@ -402,7 +417,8 @@ public class MainGui extends JPanel
             if (stream.getCodecType().equals(StreamType.VIDEO)) {
                 videoWidth = stream.getCodedWidth();
                 videoHeight = stream.getCodedHeight();
-                System.out.println("--- DEBUG ---");
+                System.out.println("The following is video information, these are not errors, just info.");
+                System.out.println("--- Video Information (DEBUG) ---");
                 System.out.println("CodecName: " + stream.getCodecName());
                 System.out.println("CodecTagString: " + stream.getCodecTagString());
                 System.out.println("CodecTag: " + stream.getCodecTag());
@@ -410,10 +426,10 @@ public class MainGui extends JPanel
                 System.out.println("CodecType: " + stream.getCodecType());
                 break;
             }
-            this.loggerAppend("\n type: " + stream.getCodecType()
-                    + "\n duration: " + stream.getDuration() + " seconds");
-            System.out.println("\n type: " + stream.getCodecType()
-                    + "\n duration: " + stream.getDuration() + " seconds");
+            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
+            this.loggerAppend(" " + "VideoType: " + stream.getCodecType() + "\n", colorWhite);
+            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
+            this.loggerAppend(" " + "Video Duration: (In Seconds) " + stream.getDuration() + "\n", colorWhite);
         }
         this.setProgressbarText("Waiting For render to start... ");
 
@@ -423,20 +439,25 @@ public class MainGui extends JPanel
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
         final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(binPath.toPath(), inputFile.toPath());
-        this.loggerAppend("\n ---  Step 2/2: Rendering file --- \n This will take awhile, grab a snack while you wait :)");
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Starting Render Thread... " + "\n", colorWhite);
         final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
             this.setProgressbarPercentage(percents);
             this.setProgressbarText("Rendering: " + percents + "% complete.");
-            System.out.println(progress);
+            this.loggerAppend("[" + "RENDER" + "]", colorBlurple);
+            this.loggerAppend(" " + percents + "% complete." + "\n", colorWhite);
             if (percents == 100) {
                 this.setProgressbarText("Render Complete.");
                 this.clearLogbox();
-                this.loggerAppend("--- Render Complete! ---");
-                this.loggerAppend("\n Outputed to: " + this.getOutputLocation());
-                this.loggerAppend("\n Now ready for more jobs.");
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Render Complete!" + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+                this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
                 this.cancelButton.setEnabled(false);
                 this.renderButton.setText("Render!");
                 this.renderButton.setEnabled(true);
@@ -454,6 +475,8 @@ public class MainGui extends JPanel
         }
         this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
         this.renderThread.start();
+        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
+        this.loggerAppend(" " + "Render Thread started. " + "\n", colorWhite);
         this.cancelButton.setEnabled(true);
     }
 
