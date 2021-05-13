@@ -9,4 +9,8 @@ This tool was created by sticks#6436 and Stijn | CodingWarrior#0101
 
 # How do I use this thing?!
 
-Well, sense this tool has not fully released yet, insturtions will be provided when it does. We will also ping everyone in our discord server when 1.0  goes live! 
+Simply open the jar, FFMPEG will download automagicly!
+
+Choose your .mp4 file, choose where to output, and choose a file name.
+
+Then hit render!
