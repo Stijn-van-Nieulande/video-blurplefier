@@ -56,10 +56,14 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MainGui extends JPanel
 {
+    private static final Logger LOGGER = Logger.getLogger(MainGui.class.getName());
+
     @NotNull
     private final VideoBlurplefier videoBlurplefier;
 
@@ -68,8 +72,10 @@ public class MainGui extends JPanel
     private final Color colorBlurple = new Color(114, 137, 218);
     private final Color colorBlurpleNew = new Color(88, 101, 242);
     private final Color colorWhite = new Color(255, 255, 255);
+
     private final JFrame frame;
     private Color selectedColor = this.colorBlurple;
+
     private JLabel inputFileLabel;
     private JTextField inputFileField;
     private JButton inputFileButton;
@@ -300,14 +306,12 @@ public class MainGui extends JPanel
             this.setProgressbarText("Render Stopped.");
             this.setProgressbarPercentage(100);
             this.clearLogbox();
-            this.loggerAppend("[" + "WARNING" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "Render was closed (THREAD_SIGTERM) " + "\n", this.colorOrange);
-            this.loggerAppend("[" + "WARNING" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "This video is partial. It may not even play. " + "\n", this.colorOrange);
-            this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "Outputted to: " + this.getOutputLocation() + "\n", this.colorWhite);
-            this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "Now Ready for more jobs" + "\n", this.colorWhite);
+
+            LOGGER.warning("Render was closed (THREAD_SIGTERM)");
+            LOGGER.warning("This video is partial. It may not even play.");
+            LOGGER.info("Outputted to: " + this.getOutputLocation());
+            LOGGER.info("Now Ready for more jobs");
+
             this.cancelButton.setEnabled(false);
             this.renderButton.setText("Render!");
             this.renderButton.setEnabled(true);
@@ -320,8 +324,7 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.inputFileField.setText(file.getPath());
-                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-                this.loggerAppend(" " + "Set Input File to: " + this.getInputfile() + "\n", this.colorWhite);
+                LOGGER.info("Set Input File to: " + this.getInputfile());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -335,8 +338,7 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.outputFileField.setText(file.getPath());
-                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-                this.loggerAppend(" " + "Set Output Directory to: " + this.getOutputLocation() + "\n", this.colorWhite);
+                LOGGER.info("Set Output Directory to: " + this.getOutputLocation());
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -358,17 +360,7 @@ public class MainGui extends JPanel
     // util functions
     public void initLogger()
     {
-        // this.logArea.getDocument().addDocumentListener(new SimpleDocumentUpdateListener(documentEvent ->
-        //         this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum())
-        // ));
-
-        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-        this.loggerAppend(" " + "Application Started Successfully, awaiting input" + "\n", this.colorWhite);
-        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-        this.loggerAppend(" " + "This tool was created by sticks#6436 and Stijn | CodingWarrior#0101" + "\n", this.colorWhite);
-
-
-        BinaryManager.LOGGER.addHandler(new SimpleLogHandler(logRecord -> {
+        final Handler logHandler = new SimpleLogHandler(logRecord -> {
             Color levelColor = this.colorBlurple;
             Color messageColor = null;
 
@@ -383,7 +375,13 @@ public class MainGui extends JPanel
 
             this.loggerAppend("[" + logRecord.getLevel() + "]", levelColor);
             this.loggerAppend(" " + logRecord.getMessage() + "\n", messageColor);
-        }));
+        });
+
+        LOGGER.addHandler(logHandler);
+        BinaryManager.LOGGER.addHandler(logHandler);
+
+        LOGGER.info("Application Started Successfully, awaiting input");
+        LOGGER.info("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101\n\n");
     }
 
     public void loggerAppend(final String message, @Nullable final Color color)
@@ -450,8 +448,7 @@ public class MainGui extends JPanel
         this.renderButton.setEnabled(false);
         this.clearLogbox();
         this.setProgressbarText("Waiting For analyzation to finish... ");
-        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-        this.loggerAppend(" " + "Starting Render, Step 1/2: Analyzing file" + "\n", this.colorWhite);
+        LOGGER.info("Starting Render, Step 1/2: Analyzing file");
 
         @Nullable final File binPath = this.videoBlurplefier.getBinaryManager().getFfmpegBinDirectory();
 
@@ -460,8 +457,7 @@ public class MainGui extends JPanel
                     "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
                     "FFmpeg not found!",
                     JOptionPane.ERROR_MESSAGE);
-            this.loggerAppend("[" + "ERROR" + "]", this.colorRed);
-            this.loggerAppend(" " + "CRITICAL: FFmpeg libraries are not installed. Halting. (-20)" + "\n", this.colorOrange);
+            LOGGER.severe("CRITICAL: FFmpeg libraries are not installed. Halting. (-20)");
             return;
         }
 
@@ -487,10 +483,8 @@ public class MainGui extends JPanel
                 System.out.println("CodecType: " + stream.getCodecType());
                 break;
             }
-            this.loggerAppend("[" + "FFPROBE" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "VideoType: " + stream.getCodecType() + "\n", this.colorWhite);
-            this.loggerAppend("[" + "FFPROBE" + "]", this.colorBlurple);
-            this.loggerAppend(" " + "Video Duration: (In Seconds) " + stream.getDuration() + "\n", this.colorWhite);
+            LOGGER.info("[FFPROBE] VideoType: " + stream.getCodecType());
+            LOGGER.info("[FFPROBE] Video Duration: (In Seconds) " + stream.getDuration());
         }
         this.setProgressbarText("Waiting For render to start... ");
 
@@ -500,28 +494,27 @@ public class MainGui extends JPanel
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
         final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(binPath.toPath(), inputFile.toPath());
-        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-        this.loggerAppend(" " + "Starting Render Thread... " + "\n", this.colorWhite);
+        LOGGER.info("Starting Render Thread...");
         final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), this.selectedColor, videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
             this.setProgressbarPercentage(percents);
             this.setProgressbarText("Rendering: " + percents + "% complete.");
-            this.loggerAppend("[" + "RENDER" + "]", this.colorBlurple);
-            this.loggerAppend(" " + percents + "% complete." + "\n", this.colorWhite);
+            LOGGER.info("[RENDER] " + percents + "% complete.");
+
             if (percents == 100) {
                 this.setProgressbarText("Render Complete.");
                 this.clearLogbox();
-                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-                this.loggerAppend(" " + "Render Complete!" + "\n", this.colorWhite);
-                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-                this.loggerAppend(" " + "Outputted to: " + this.getOutputLocation() + "\n", this.colorWhite);
-                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-                this.loggerAppend(" " + "Now Ready for more jobs" + "\n", this.colorWhite);
+
+                LOGGER.info("Render Complete!");
+                LOGGER.info("Outputted to: " + this.getOutputLocation());
+                LOGGER.info("Now Ready for more jobs");
+
                 this.cancelButton.setEnabled(false);
                 this.renderButton.setText("Render!");
                 this.renderButton.setEnabled(true);
+
                 try {
                     this.videoBlurplefier.getTrayManager().displayTray("Your Render Has Completed!", TrayIcon.MessageType.INFO);
                 } catch (AWTException | MalformedURLException e) {
@@ -536,8 +529,7 @@ public class MainGui extends JPanel
         }
         this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
         this.renderThread.start();
-        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
-        this.loggerAppend(" " + "Render Thread started. " + "\n", this.colorWhite);
+        LOGGER.info("Render Thread started.");
         this.cancelButton.setEnabled(true);
     }
 
