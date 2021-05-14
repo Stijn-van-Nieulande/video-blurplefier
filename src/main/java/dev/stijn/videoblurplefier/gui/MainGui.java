@@ -9,6 +9,8 @@ import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
 import dev.stijn.videoblurplefier.VideoBlurplefier;
 import dev.stijn.videoblurplefier.binaries.BinaryManager;
+import dev.stijn.videoblurplefier.gui.elements.ColorPickerButton;
+import dev.stijn.videoblurplefier.gui.elements.ColorRadioButton;
 import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import dev.stijn.videoblurplefier.processor.ffmpeg.FfmpegVideoProcessor;
 import dev.stijn.videoblurplefier.util.logging.SimpleLogHandler;
@@ -16,7 +18,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -25,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
@@ -39,11 +44,13 @@ import javax.swing.text.StyledDocument;
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.TrayIcon;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
@@ -56,7 +63,13 @@ public class MainGui extends JPanel
     @NotNull
     private final VideoBlurplefier videoBlurplefier;
 
+    private final Color colorRed = new Color(248, 51, 60);
+    private final Color colorOrange = new Color(221, 164, 72);
+    private final Color colorBlurple = new Color(114, 137, 218);
+    private final Color colorBlurpleNew = new Color(88, 101, 242);
+    private final Color colorWhite = new Color(255, 255, 255);
     private final JFrame frame;
+    private Color selectedColor = this.colorBlurple;
     private JLabel inputFileLabel;
     private JTextField inputFileField;
     private JButton inputFileButton;
@@ -71,13 +84,12 @@ public class MainGui extends JPanel
     private JButton renderButton;
     private JButton cancelButton;
     private Thread renderThread;
-
-    // Move Colors So they can be accessed everywhere
-
-    final Color colorRed = new Color(248, 51, 60);
-    final Color colorOrange = new Color(221, 164, 72);
-    final Color colorBlurple = new Color(114, 137, 218);
-    final Color colorWhite = new Color(255, 255, 255);
+    private JLabel colorsLabel;
+    private ButtonGroup colorsButtonGroup;
+    private JRadioButton colorsButtonBlurple;
+    private JRadioButton colorsButtonBlurpleNew;
+    private JRadioButton colorsButtonCustom;
+    private ColorPickerButton colorsButtonCustomPicker;
 
     public MainGui(@NotNull final VideoBlurplefier videoBlurplefier, final JFrame frame)
     {
@@ -85,6 +97,7 @@ public class MainGui extends JPanel
         this.frame = frame;
 
         final JPanel inputsPanel = new JPanel();
+        final JPanel inputsColorsPanel = new JPanel();
         final JPanel progressPanel = new JPanel();
 
         final ImageIcon logo = new ImageIcon();
@@ -108,6 +121,44 @@ public class MainGui extends JPanel
         this.logAreaScrollPane = new JScrollPane(this.logArea);
         this.cancelButton = new JButton("Halt Cycle");
         this.renderButton = new JButton("Render!");
+        this.colorsLabel = new JLabel("Color");
+        this.colorsButtonGroup = new ButtonGroup();
+        this.colorsButtonBlurple = new ColorRadioButton("Original Blurple", true, this.colorBlurple);
+        this.colorsButtonBlurpleNew = new ColorRadioButton("New Blurple", this.colorBlurpleNew);
+        this.colorsButtonCustom = new JRadioButton("Custom");
+        final JPanel colorsDisplay = new JPanel();
+        this.colorsButtonCustomPicker = new ColorPickerButton(this.frame, color -> {
+            this.selectedColor = color;
+            colorsDisplay.setBackground(color);
+        });
+
+        this.colorsButtonGroup.add(this.colorsButtonBlurple);
+        this.colorsButtonGroup.add(this.colorsButtonBlurpleNew);
+        this.colorsButtonGroup.add(this.colorsButtonCustom);
+
+        colorsDisplay.setPreferredSize(new Dimension(40, 30));
+        colorsDisplay.setBackground(this.selectedColor);
+
+        inputsColorsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        inputsColorsPanel.add(colorsDisplay);
+        inputsColorsPanel.add(this.colorsButtonBlurple);
+        inputsColorsPanel.add(this.colorsButtonBlurpleNew);
+        inputsColorsPanel.add(this.colorsButtonCustom);
+        inputsColorsPanel.add(this.colorsButtonCustomPicker);
+
+        final ActionListener actionListener = event -> {
+            final AbstractButton button = (AbstractButton) event.getSource();
+            if (button instanceof ColorRadioButton) {
+                this.selectedColor = ((ColorRadioButton) button).getColor();
+            } else {
+                this.selectedColor = this.colorsButtonCustomPicker.getCurrentSelectedColor();
+            }
+            colorsDisplay.setBackground(this.selectedColor);
+        };
+
+        this.colorsButtonBlurple.addActionListener(actionListener);
+        this.colorsButtonBlurpleNew.addActionListener(actionListener);
+        this.colorsButtonCustom.addActionListener(actionListener);
 
         //set components properties
         this.renderButton.setToolTipText("Render the frames");
@@ -127,6 +178,7 @@ public class MainGui extends JPanel
         this.inputFileField.setMinimumSize(new Dimension(-1, 40));
         this.outputFileField.setMinimumSize(new Dimension(-1, 40));
         this.outputFilenameField.setMinimumSize(new Dimension(-1, 40));
+        inputsColorsPanel.setMinimumSize(new Dimension(200, 40));
 
         this.logAreaScrollPane.setMinimumSize(new Dimension(-1, 100));
         this.renderButton.setMinimumSize(new Dimension(80, 100));
@@ -156,7 +208,16 @@ public class MainGui extends JPanel
         constraints.gridy = 2;
         inputsPanel.add(this.outputFileButton, constraints);
 
+        constraints.gridx = 0;
         constraints.gridy = 4;
+        inputsPanel.add(inputsColorsPanel, constraints);
+        constraints.gridy = 3;
+        constraints.insets = new Insets(33, 15, 3, 15);
+        inputsPanel.add(this.colorsLabel, constraints);
+
+        constraints.gridx = 1;
+        constraints.gridy = 4;
+        constraints.insets = new Insets(3, 15, 3, 15);
         inputsPanel.add(this.outputFilenameField, constraints);
         constraints.gridy = 3;
         constraints.insets = new Insets(33, 15, 3, 15);
@@ -239,14 +300,14 @@ public class MainGui extends JPanel
             this.setProgressbarText("Render Stopped.");
             this.setProgressbarPercentage(100);
             this.clearLogbox();
-            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
-            this.loggerAppend(" " + "Render was closed (THREAD_SIGTERM) " + "\n", colorOrange);
-            this.loggerAppend("[" + "WARNING" + "]", colorBlurple);
-            this.loggerAppend(" " + "This video is partial. It may not even play. " + "\n", colorOrange);
-            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-            this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
-            this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-            this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
+            this.loggerAppend("[" + "WARNING" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "Render was closed (THREAD_SIGTERM) " + "\n", this.colorOrange);
+            this.loggerAppend("[" + "WARNING" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "This video is partial. It may not even play. " + "\n", this.colorOrange);
+            this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "Outputted to: " + this.getOutputLocation() + "\n", this.colorWhite);
+            this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "Now Ready for more jobs" + "\n", this.colorWhite);
             this.cancelButton.setEnabled(false);
             this.renderButton.setText("Render!");
             this.renderButton.setEnabled(true);
@@ -259,8 +320,8 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.inputFileField.setText(file.getPath());
-                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-                this.loggerAppend(" " + "Set Input File to: " + this.getInputfile() + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+                this.loggerAppend(" " + "Set Input File to: " + this.getInputfile() + "\n", this.colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -274,8 +335,8 @@ public class MainGui extends JPanel
             if (option == JFileChooser.APPROVE_OPTION) {
                 final File file = fileChooser.getSelectedFile();
                 this.outputFileField.setText(file.getPath());
-                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-                this.loggerAppend(" " + "Set Output Directory to: " + this.getOutputLocation() + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+                this.loggerAppend(" " + "Set Output Directory to: " + this.getOutputLocation() + "\n", this.colorWhite);
             } else {
                 System.out.println("[DEBUG] File Chooser was closed without any file selection, not inputting file.");
             }
@@ -301,23 +362,23 @@ public class MainGui extends JPanel
         //         this.logAreaScrollPane.getVerticalScrollBar().setValue(this.logAreaScrollPane.getVerticalScrollBar().getMaximum())
         // ));
 
-        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-        this.loggerAppend(" " + "Application Started Successfully, awaiting input" + "\n", colorWhite);
-        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-        this.loggerAppend(" " + "This tool was created by sticks#6436 and Stijn | CodingWarrior#0101" + "\n", colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+        this.loggerAppend(" " + "Application Started Successfully, awaiting input" + "\n", this.colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+        this.loggerAppend(" " + "This tool was created by sticks#6436 and Stijn | CodingWarrior#0101" + "\n", this.colorWhite);
 
 
         BinaryManager.LOGGER.addHandler(new SimpleLogHandler(logRecord -> {
-            Color levelColor = colorBlurple;
+            Color levelColor = this.colorBlurple;
             Color messageColor = null;
 
             if (logRecord.getLevel().equals(Level.SEVERE)) {
-                levelColor = colorRed;
-                messageColor = colorRed;
+                levelColor = this.colorRed;
+                messageColor = this.colorRed;
             }
             if (logRecord.getLevel().equals(Level.WARNING)) {
-                levelColor = colorOrange;
-                messageColor = colorOrange;
+                levelColor = this.colorOrange;
+                messageColor = this.colorOrange;
             }
 
             this.loggerAppend("[" + logRecord.getLevel() + "]", levelColor);
@@ -389,8 +450,8 @@ public class MainGui extends JPanel
         this.renderButton.setEnabled(false);
         this.clearLogbox();
         this.setProgressbarText("Waiting For analyzation to finish... ");
-        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-        this.loggerAppend(" " + "Starting Render, Step 1/2: Analyzing file" + "\n", colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+        this.loggerAppend(" " + "Starting Render, Step 1/2: Analyzing file" + "\n", this.colorWhite);
 
         @Nullable final File binPath = this.videoBlurplefier.getBinaryManager().getFfmpegBinDirectory();
 
@@ -399,8 +460,8 @@ public class MainGui extends JPanel
                     "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
                     "FFmpeg not found!",
                     JOptionPane.ERROR_MESSAGE);
-            this.loggerAppend("[" + "ERROR" + "]", colorRed);
-            this.loggerAppend(" " + "CRITICAL: FFmpeg libraries are not installed. Halting. (-20)" + "\n", colorOrange);
+            this.loggerAppend("[" + "ERROR" + "]", this.colorRed);
+            this.loggerAppend(" " + "CRITICAL: FFmpeg libraries are not installed. Halting. (-20)" + "\n", this.colorOrange);
             return;
         }
 
@@ -426,10 +487,10 @@ public class MainGui extends JPanel
                 System.out.println("CodecType: " + stream.getCodecType());
                 break;
             }
-            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
-            this.loggerAppend(" " + "VideoType: " + stream.getCodecType() + "\n", colorWhite);
-            this.loggerAppend("[" + "FFPROBE" + "]", colorBlurple);
-            this.loggerAppend(" " + "Video Duration: (In Seconds) " + stream.getDuration() + "\n", colorWhite);
+            this.loggerAppend("[" + "FFPROBE" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "VideoType: " + stream.getCodecType() + "\n", this.colorWhite);
+            this.loggerAppend("[" + "FFPROBE" + "]", this.colorBlurple);
+            this.loggerAppend(" " + "Video Duration: (In Seconds) " + stream.getDuration() + "\n", this.colorWhite);
         }
         this.setProgressbarText("Waiting For render to start... ");
 
@@ -439,25 +500,25 @@ public class MainGui extends JPanel
         final File outputFile = new File(this.getOutputLocation(), fileName);
 
         final long videoDurationMilliseconds = this.getExactVideoDurationMilliseconds(binPath.toPath(), inputFile.toPath());
-        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-        this.loggerAppend(" " + "Starting Render Thread... " + "\n", colorWhite);
-        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), videoWidth, videoHeight);
+        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+        this.loggerAppend(" " + "Starting Render Thread... " + "\n", this.colorWhite);
+        final VideoProcessor videoProcessor = new FfmpegVideoProcessor(binPath.toPath(), this.selectedColor, videoWidth, videoHeight);
 
         videoProcessor.setProgressListener(progress -> {
             final int percents = (int) (100 * progress.getTimeInMilliseconds() / videoDurationMilliseconds);
             this.setProgressbarPercentage(percents);
             this.setProgressbarText("Rendering: " + percents + "% complete.");
-            this.loggerAppend("[" + "RENDER" + "]", colorBlurple);
-            this.loggerAppend(" " + percents + "% complete." + "\n", colorWhite);
+            this.loggerAppend("[" + "RENDER" + "]", this.colorBlurple);
+            this.loggerAppend(" " + percents + "% complete." + "\n", this.colorWhite);
             if (percents == 100) {
                 this.setProgressbarText("Render Complete.");
                 this.clearLogbox();
-                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-                this.loggerAppend(" " + "Render Complete!" + "\n", colorWhite);
-                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-                this.loggerAppend( " " + "Outputted to: " + this.getOutputLocation() + "\n", colorWhite);
-                this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-                this.loggerAppend(" " + "Now Ready for more jobs" + "\n", colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+                this.loggerAppend(" " + "Render Complete!" + "\n", this.colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+                this.loggerAppend(" " + "Outputted to: " + this.getOutputLocation() + "\n", this.colorWhite);
+                this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+                this.loggerAppend(" " + "Now Ready for more jobs" + "\n", this.colorWhite);
                 this.cancelButton.setEnabled(false);
                 this.renderButton.setText("Render!");
                 this.renderButton.setEnabled(true);
@@ -475,8 +536,8 @@ public class MainGui extends JPanel
         }
         this.renderThread = new Thread(() -> videoProcessor.process(inputFile, outputFile));
         this.renderThread.start();
-        this.loggerAppend("[" + "INFO" + "]", colorBlurple);
-        this.loggerAppend(" " + "Render Thread started. " + "\n", colorWhite);
+        this.loggerAppend("[" + "INFO" + "]", this.colorBlurple);
+        this.loggerAppend(" " + "Render Thread started. " + "\n", this.colorWhite);
         this.cancelButton.setEnabled(true);
     }
 

@@ -71,6 +71,13 @@
             <artifactId>zip4j</artifactId>
             <version>2.7.0</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.drjekyll/colorpicker -->
+        <dependency>
+            <groupId>org.drjekyll</groupId>
+            <artifactId>colorpicker</artifactId>
+            <version>1.3</version>
+        </dependency>
     </dependencies>
 
     <build>

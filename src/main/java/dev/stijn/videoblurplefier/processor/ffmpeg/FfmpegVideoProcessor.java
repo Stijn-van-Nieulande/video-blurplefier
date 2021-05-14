@@ -13,6 +13,7 @@ import dev.stijn.videoblurplefier.processor.VideoProcessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.Color;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -26,19 +27,20 @@ ffmpeg.exe -f lavfi -i -hwaccel auto -c:v h264 "color=0x7289DA:s=1920x1080" -i o
  */
 public class FfmpegVideoProcessor implements VideoProcessor
 {
-    private static final String BLURPLE_COLOR = "0x7289DA";
-
     @Nullable
     private final Path executableBinaryFolder;
+    @NotNull
+    private final String overlayColorHex;
     private final int videoWidth;
     private final int videoHeight;
     boolean processing = false;
     @Nullable
     private Consumer<Progress> listener;
 
-    public FfmpegVideoProcessor(final @Nullable Path executableBinaryFolder, final int videoWidth, final int videoHeight)
+    public FfmpegVideoProcessor(final @Nullable Path executableBinaryFolder, @NotNull final Color overlayColor, final int videoWidth, final int videoHeight)
     {
         this.executableBinaryFolder = executableBinaryFolder;
+        this.overlayColorHex = String.format("0x%02x%02x%02x", overlayColor.getRed(), overlayColor.getGreen(), overlayColor.getBlue());
         this.videoWidth = videoWidth;
         this.videoHeight = videoHeight;
     }
@@ -65,7 +67,7 @@ public class FfmpegVideoProcessor implements VideoProcessor
                     //.addArguments("-c:v", "h264")
                     .addArguments("-f", "lavfi")
                     .addInput(UrlInput.fromPath(input.toPath()))
-                    .addArguments("-i", "color=" + BLURPLE_COLOR + ":s=" + this.videoWidth + "x" + this.videoHeight)
+                    .addArguments("-i", "color=" + this.overlayColorHex + ":s=" + this.videoWidth + "x" + this.videoHeight)
                     .setComplexFilter(FilterGraph.of(
                             FilterChain.of(
                                     Filter.fromInputLink("0:v")
