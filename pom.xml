@@ -16,7 +16,7 @@
         <java.version>11</java.version>
 
         <version.build.maven-shade-plugin>3.2.4</version.build.maven-shade-plugin>
-        <jaffree.version>2021-05-07</jaffree.version>
+        <jaffree.version>2021.10.19</jaffree.version>
     </properties>
 
     <dependencies>
