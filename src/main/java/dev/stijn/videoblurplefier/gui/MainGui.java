@@ -68,6 +68,8 @@ public class MainGui extends JPanel
     private final VideoBlurplefier videoBlurplefier;
 
     private final Color colorRed = new Color(248, 51, 60);
+
+    private final Color colorGreen = new Color(0, 255, 0);
     private final Color colorOrange = new Color(221, 164, 72);
     private final Color colorBlurple = new Color(114, 137, 218);
     private final Color colorBlurpleNew = new Color(88, 101, 242);
@@ -275,14 +277,14 @@ public class MainGui extends JPanel
         this.renderButton.addActionListener(e -> {
             if (this.inputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
-                        "Please Select an input file! (Fatal)",
+                        "Please Select an input file!",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (this.outputFileField.getText().equals("Select a file below...")) {
                 JOptionPane.showMessageDialog(frame,
-                        "Please Select an output directory! (Fatal)",
+                        "Please Select an output directory!",
                         "Render Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
@@ -348,7 +350,7 @@ public class MainGui extends JPanel
     public static void open(@NotNull final VideoBlurplefier videoBlurplefier)
     {
         // TODO: Make this less staticy
-        final JFrame frame = new JFrame("Video Blurplefier - 2.0.0");
+        final JFrame frame = new JFrame("Video Blurplefier - 2.0.1");
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setBackground(Color.WHITE);
@@ -373,6 +375,11 @@ public class MainGui extends JPanel
                 messageColor = this.colorOrange;
             }
 
+            if(logRecord.getLevel().equals(Level.FINE)) {
+                levelColor = this.colorGreen;
+                messageColor = this.colorGreen;
+            }
+
             this.loggerAppend("[" + logRecord.getLevel() + "]", levelColor);
             this.loggerAppend(" " + logRecord.getMessage() + "\n", messageColor);
         });
@@ -381,7 +388,8 @@ public class MainGui extends JPanel
         BinaryManager.LOGGER.addHandler(logHandler);
 
         LOGGER.info("Application Started Successfully, awaiting input");
-        LOGGER.info("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101\n\n");
+        LOGGER.info("This tool was created by sticks#6436 and Stijn | CodingWarrior#0101");
+        LOGGER.info("Tool updated by SticksDev on 5/10/2022.\n\n");
     }
 
     public void loggerAppend(final String message, @Nullable final Color color)
@@ -457,7 +465,7 @@ public class MainGui extends JPanel
                     "The FFmpeg libraries are not installed!\nIt may be that the installation is still in progress\nor that your OS is not yet supported.",
                     "FFmpeg not found!",
                     JOptionPane.ERROR_MESSAGE);
-            LOGGER.severe("CRITICAL: FFmpeg libraries are not installed. Halting. (-20)");
+            LOGGER.severe("Fatal: FFmpeg libraries are not installed. Halting. (-20)");
             return;
         }
 

@@ -16,7 +16,7 @@ import java.net.URL;
 public class FfmpegWindowsBinaryInstaller implements BinaryInstaller
 {
     private static final String DOWNLOAD_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
-    private static final String CHECKSUM_URL = "https://www.gyan.dev/ffmpeg/builds/sha256-release-essentials-zip";
+    private static final String CHECKSUM_URL = "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-5.0.1-essentials_build.zip.sha256";
 
     public FfmpegWindowsBinaryInstaller()
     {
