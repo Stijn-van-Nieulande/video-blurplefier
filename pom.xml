@@ -15,7 +15,7 @@
         <server.jars>${project.basedir}/lib</server.jars>
         <java.version>11</java.version>
 
-        <version.build.maven-shade-plugin>3.2.4</version.build.maven-shade-plugin>
+        <version.build.maven-shade-plugin>3.4.1</version.build.maven-shade-plugin>
         <jaffree.version>2021-05-07</jaffree.version>
     </properties>
 
